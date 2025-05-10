@@ -6,17 +6,18 @@ import (
 	"log"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/superbkibbles/ecommerce/internal/adapters/repository/mongodb"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SeedData populates the database with sample data for testing
-func SeedData(db *mongo.Database) error {
+func SeedData(db *mongo.Database, redisClient *redis.Client) error {
 	// Initialize repositories
 	productRepo := mongodb.NewProductRepository(db)
 	categoryRepo := mongodb.NewCategoryRepository(db, productRepo)
-	userRepo := mongodb.NewUserRepository(db)
+	userRepo := mongodb.NewUserRepository(db, redisClient)
 	orderRepo := mongodb.NewOrderRepository(db)
 	reviewRepo := mongodb.NewReviewRepository(db, orderRepo)
 

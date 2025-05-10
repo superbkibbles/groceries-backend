@@ -46,6 +46,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *entities.User) error
 	GetByID(ctx context.Context, id string) (*entities.User, error)
 	GetByEmail(ctx context.Context, email string) (*entities.User, error)
+	GetByPhoneNumber(ctx context.Context, phoneNumber string) (*entities.User, error)
 	Update(ctx context.Context, user *entities.User) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.User, int, error)
@@ -53,6 +54,7 @@ type UserRepository interface {
 	UpdateAddress(ctx context.Context, address *entities.Address) error
 	DeleteAddress(ctx context.Context, id string) error
 	GetAddressesByUserID(ctx context.Context, userID string) ([]*entities.Address, error)
+	SaveOTP(ctx context.Context, phoneNumber string, otp string) error
 }
 
 // ReviewRepository defines the interface for review data access

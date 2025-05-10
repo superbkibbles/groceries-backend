@@ -18,16 +18,20 @@ const (
 
 // User represents a user in the e-commerce system
 type User struct {
-	ID           string    `json:"id" bson:"_id"`
-	Email        string    `json:"email" bson:"email"`
-	PasswordHash string    `json:"password_hash,omitempty" bson:"password_hash"`
-	FirstName    string    `json:"first_name" bson:"first_name"`
-	LastName     string    `json:"last_name" bson:"last_name"`
-	PhoneNumber  string    `json:"phone_number" bson:"phone_number"`
-	Role         UserRole  `json:"role" bson:"role"`
-	Active       bool      `json:"active" bson:"active"`
-	CreatedAt    time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" bson:"updated_at"`
+	ID           string     `json:"id" bson:"_id"`
+	Email        string     `json:"email" bson:"email"`
+	PasswordHash string     `json:"password_hash,omitempty" bson:"password_hash"`
+	FirstName    string     `json:"first_name" bson:"first_name"`
+	LastName     string     `json:"last_name" bson:"last_name"`
+	PhoneNumber  string     `json:"phone_number" bson:"phone_number"`
+	Role         UserRole   `json:"role" bson:"role"`
+	Active       bool       `json:"active" bson:"active"`
+	CreatedAt    time.Time  `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" bson:"updated_at"`
+	IsNew        bool       `json:"is_new" bson:"is_new"` // Indicates if the user is new and needs to change to false after user updates their profile
+	Addresses    []Address  `json:"addresses,omitempty" bson:"addresses,omitempty"`
+	CartID       string     `json:"cart_id,omitempty" bson:"cart_id,omitempty"` // Cart ID for the user
+	Cart         []CartItem `json:"cart,omitempty" bson:"cart,omitempty"`       // Cart items for the user
 }
 
 // Address represents a user's address

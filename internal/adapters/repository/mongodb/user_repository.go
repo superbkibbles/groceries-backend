@@ -3,7 +3,9 @@ package mongodb
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,14 +17,16 @@ type UserRepository struct {
 	db             *mongo.Database
 	userCollection *mongo.Collection
 	addrCollection *mongo.Collection
+	redisClient    *redis.Client
 }
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *mongo.Database) *UserRepository {
+func NewUserRepository(db *mongo.Database, redisClient *redis.Client) *UserRepository {
 	return &UserRepository{
 		db:             db,
 		userCollection: db.Collection(UserCollection),
 		addrCollection: db.Collection(AddressCollection),
+		redisClient:    redisClient,
 	}
 }
 
@@ -192,4 +196,25 @@ func (r *UserRepository) GetAddressesByUserID(ctx context.Context, userID string
 	}
 
 	return addresses, nil
+}
+
+func (r *UserRepository) GetByPhoneNumber(ctx context.Context, phoneNumber string) (*entities.User, error) {
+	var user entities.User
+	err := r.userCollection.FindOne(ctx, bson.M{"phone_number": phoneNumber}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) SaveOTP(ctx context.Context, phoneNumber string, otp string) error {
+	// Save OTP to Redis with a 5-minute expiration
+	err := r.redisClient.Set(ctx, phoneNumber, otp, 5*time.Minute).Err()
+	if err != nil {
+		return err
+	}
+	return nil
 }

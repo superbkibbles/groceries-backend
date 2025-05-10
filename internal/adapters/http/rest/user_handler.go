@@ -61,8 +61,9 @@ type RegisterRequest struct {
 
 // LoginRequest represents the request body for user login
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	// Email    string `json:"email" binding:"required,email"`
+	// Password string `json:"password" binding:"required"`
+	PhoneNumber string `json:"phone_number" binding:"required"`
 }
 
 // LoginResponse represents the response for a successful login
@@ -158,8 +159,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	user, token, err := h.userService.Login(
 		c.Request.Context(),
-		req.Email,
-		req.Password,
+		req.PhoneNumber,
 	)
 
 	if err != nil {

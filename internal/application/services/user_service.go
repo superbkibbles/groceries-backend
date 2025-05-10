@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"github.com/superbkibbles/ecommerce/internal/utils"
 )
 
 // JWT secret key - in production, this should be loaded from environment variables
@@ -54,17 +55,38 @@ func (s *UserService) Register(ctx context.Context, email, password, firstName, 
 }
 
 // Login authenticates a user and returns a JWT token
-func (s *UserService) Login(ctx context.Context, email, password string) (*entities.User, string, error) {
-	// Get user by email
-	user, err := s.userRepo.GetByEmail(ctx, email)
+func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.User, string, error) {
+	// validate input and check if phone number is valid
+	if phoneNumber == "" {
+		return nil, "", errors.New("phone number is required")
+	}
+	if len(phoneNumber) < 10 {
+		return nil, "", errors.New("phone number is invalid")
+	}
+
+	// generate otp of 6 digits
+	otp, err := utils.GenerateOTP(6)
+	if err != nil {
+		return nil, "", err
+	}
+
+	s.userRepo.SaveOTP(ctx, phoneNumber, otp) // save otp to redis
+	// send otp to the phone number
+
+	// validate otp
+
+	// Get user by phone number
+	user, err := s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
 	if err != nil {
 		return nil, "", errors.New("invalid email or password")
 	}
 
-	// Validate password
-	if !user.ValidatePassword(password) {
-		return nil, "", errors.New("invalid email or password")
+	// check if user does not exists
+	if user == nil {
+		// create new user with phone number only
 	}
+
+	// send OTP to user
 
 	// Generate JWT token
 	token, err := generateJWT(user)

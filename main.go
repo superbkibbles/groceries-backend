@@ -13,6 +13,7 @@ import (
 	_ "github.com/superbkibbles/ecommerce/docs"
 	"github.com/superbkibbles/ecommerce/internal/adapters/http/rest"
 	"github.com/superbkibbles/ecommerce/internal/adapters/repository/mongodb"
+	"github.com/superbkibbles/ecommerce/internal/adapters/repository/redisdb"
 	"github.com/superbkibbles/ecommerce/internal/application/services"
 	"github.com/superbkibbles/ecommerce/internal/config"
 	swaggerFiles "github.com/swaggo/files"
@@ -47,11 +48,16 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	redisClient, err := redisdb.NewRedisConnection("localhost:6379")
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
 	// Initialize repositories
 	productRepo := mongodb.NewProductRepository(db)
 	orderRepo := mongodb.NewOrderRepository(db)
 	categoryRepo := mongodb.NewCategoryRepository(db, productRepo)
-	userRepo := mongodb.NewUserRepository(db)
+	userRepo := mongodb.NewUserRepository(db, redisClient)
 	settingRepo := mongodb.NewSettingRepository(db)
 
 	// Initialize services

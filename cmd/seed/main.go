@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/superbkibbles/ecommerce/internal/adapters/repository/mongodb"
+	"github.com/superbkibbles/ecommerce/internal/adapters/repository/redisdb"
 	"github.com/superbkibbles/ecommerce/internal/config"
 	"github.com/superbkibbles/ecommerce/internal/utils"
 )
@@ -21,9 +22,13 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	redisClient, err := redisdb.NewRedisConnection("localhost:6379")
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 	// Seed the database with dummy data
 	log.Println("Starting to seed database...")
-	if err := utils.SeedData(db); err != nil {
+	if err := utils.SeedData(db, redisClient); err != nil {
 		log.Fatalf("Failed to seed database: %v", err)
 	}
 
