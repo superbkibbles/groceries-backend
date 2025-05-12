@@ -80,6 +80,7 @@ func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) error {
 		s.smsConfig.SenderID,
 		phoneNumber,
 		otpMessage,
+		s.smsConfig.ProductType,
 	); err != nil {
 		utils.Logger.Error().
 			Err(err).
@@ -90,6 +91,7 @@ func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) error {
 
 	utils.Logger.Info().
 		Str("phone", phoneNumber).
+		Str("link", s.smsConfig.APIURL).
 		Msg("OTP sent successfully")
 
 	return nil

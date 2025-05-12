@@ -19,12 +19,13 @@ var httpClient = &http.Client{
 }
 
 // SendSMSRequest sends an SMS request to the SMS service
-func SendSMSRequest(ctx context.Context, apiURL, token, from, phoneNumber, message string) error {
+func SendSMSRequest(ctx context.Context, apiURL, token, from, phoneNumber, message, productType string) error {
 	// Prepare form data
 	formData := url.Values{}
 	formData.Add("from", from)
 	formData.Add("phone_number", phoneNumber)
-	formData.Add("message", message)
+	formData.Add("message_text", message)
+	formData.Add("product_type", productType)
 
 	// Create request with form data
 	req, err := http.NewRequestWithContext(
@@ -46,6 +47,7 @@ func SendSMSRequest(ctx context.Context, apiURL, token, from, phoneNumber, messa
 		Str("method", req.Method).
 		Str("from", from).
 		Str("phone", phoneNumber).
+		Str("product_type", productType).
 		Msg("Sending SMS request")
 
 	// Send request

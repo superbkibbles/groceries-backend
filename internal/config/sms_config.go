@@ -6,17 +6,19 @@ import (
 
 // SMSConfig contains configuration for SMS service
 type SMSConfig struct {
-	APIURL   string
-	Token    string
-	SenderID string
+	APIURL      string
+	Token       string
+	SenderID    string
+	ProductType string
 }
 
 // NewSMSConfig creates a new SMS configuration from environment variables
 func NewSMSConfig() *SMSConfig {
 	return &SMSConfig{
-		APIURL:   getEnvOrDefault("SMS_API_URL", "https://smscloud.ss.com/api/v1/campaign/infinite"),
-		Token:    getEnvOrDefault("SMS_API_TOKEN", "TOKEN"), // This should be set in production
-		SenderID: getEnvOrDefault("SMS_SENDER_ID", "Watany-taxi"),
+		APIURL:      getEnvOrDefault("SMS_API_URL", "https://smscloud.alsardfiber.com/api/v1/campaign/infinite"),
+		Token:       getEnvOrDefault("SMS_API_TOKEN", "warqVMC0OwKcVJby7HYcAvplV9wEMbnQBX8bArBQ6cZDnPp0WsMDjE1Wdklr"),
+		SenderID:    getEnvOrDefault("SMS_SENDER_ID", "Watany-taxi"),
+		ProductType: getEnvOrDefault("SMS_PRODUCT_TYPE", "nationalcmp2"),
 	}
 }
 
