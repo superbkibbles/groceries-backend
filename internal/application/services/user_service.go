@@ -71,9 +71,9 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 	}
 
 	s.userRepo.SaveOTP(ctx, phoneNumber, otp) // save otp to redis
-	// send otp to the phone number
+	// TODO: send otp to the phone number
 
-	// validate otp
+	// TODO: validate otp
 
 	// Get user by phone number
 	user, err := s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
@@ -84,9 +84,17 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 	// check if user does not exists
 	if user == nil {
 		// create new user with phone number only
+		if err := s.userRepo.Create(ctx, &entities.User{
+			PhoneNumber: phoneNumber,
+			Role:        entities.UserRoleCustomer,
+			IsNew:       true,
+			Active:      true,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}); err != nil {
+			return nil, "", err
+		}
 	}
-
-	// send OTP to user
 
 	// Generate JWT token
 	token, err := generateJWT(user)
