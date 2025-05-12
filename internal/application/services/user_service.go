@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/superbkibbles/ecommerce/internal/config"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
 	"github.com/superbkibbles/ecommerce/internal/utils"
@@ -16,13 +18,15 @@ const jwtSecret = "SJSDH#$!!^&#dsds9%^!sajh"
 
 // UserService implements the user service interface
 type UserService struct {
-	userRepo ports.UserRepository
+	userRepo  ports.UserRepository
+	smsConfig *config.SMSConfig
 }
 
 // NewUserService creates a new user service
 func NewUserService(userRepo ports.UserRepository) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		userRepo:  userRepo,
+		smsConfig: config.NewSMSConfig(),
 	}
 }
 
@@ -54,6 +58,43 @@ func (s *UserService) Register(ctx context.Context, email, password, firstName, 
 	return user, nil
 }
 
+func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) error {
+	// generate otp of 6 digits
+	otp, err := utils.GenerateOTP(6)
+	if err != nil {
+		return err
+	}
+
+	if err := s.userRepo.SaveOTP(ctx, phoneNumber, otp); err != nil { // save otp to redis
+		return err
+	}
+
+	// Create OTP message
+	otpMessage := fmt.Sprintf("Your National Taxi Password is: %s", otp)
+
+	// Send the SMS with OTP
+	if err := utils.SendSMSRequest(
+		ctx,
+		s.smsConfig.APIURL,
+		s.smsConfig.Token,
+		s.smsConfig.SenderID,
+		phoneNumber,
+		otpMessage,
+	); err != nil {
+		utils.Logger.Error().
+			Err(err).
+			Str("phone", phoneNumber).
+			Msg("Failed to send OTP")
+		return fmt.Errorf("failed to send OTP: %w", err)
+	}
+
+	utils.Logger.Info().
+		Str("phone", phoneNumber).
+		Msg("OTP sent successfully")
+
+	return nil
+}
+
 // Login authenticates a user and returns a JWT token
 func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.User, string, error) {
 	// validate input and check if phone number is valid
@@ -63,17 +104,6 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 	if len(phoneNumber) < 10 {
 		return nil, "", errors.New("phone number is invalid")
 	}
-
-	// generate otp of 6 digits
-	otp, err := utils.GenerateOTP(6)
-	if err != nil {
-		return nil, "", err
-	}
-
-	s.userRepo.SaveOTP(ctx, phoneNumber, otp) // save otp to redis
-	// TODO: send otp to the phone number
-
-	// TODO: validate otp
 
 	// Get user by phone number
 	user, err := s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
@@ -90,7 +120,6 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 			IsNew:       true,
 			Active:      true,
 			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		}); err != nil {
 			return nil, "", err
 		}

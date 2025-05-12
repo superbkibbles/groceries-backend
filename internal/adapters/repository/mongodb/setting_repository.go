@@ -22,11 +22,11 @@ func NewSettingRepository(db *mongo.Database) *SettingRepository {
 	// Create indexes for faster lookups
 	indexModels := []mongo.IndexModel{
 		{
-			Keys:    bson.D{{"key", 1}, {"scope", 1}},
+			Keys:    bson.D{{Key: "key", Value: 1}, {Key: "scope", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys: bson.D{{"key", 1}, {"user_id", 1}, {"scope", 1}},
+			Keys: bson.D{{Key: "key", Value: 1}, {Key: "user_id", Value: 1}, {Key: "scope", Value: 1}},
 			Options: options.Index().SetUnique(true).SetPartialFilterExpression(
 				bson.M{"scope": entities.SettingScopeUser, "user_id": bson.M{"$exists": true}},
 			),

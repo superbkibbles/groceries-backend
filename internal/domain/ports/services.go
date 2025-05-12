@@ -38,6 +38,7 @@ type OrderService interface {
 type UserService interface {
 	Register(ctx context.Context, email, password, firstName, lastName string) (*entities.User, error)
 	Login(ctx context.Context, phoneNumber string) (*entities.User, string, error) // Returns user, token, error
+	SendOTP(ctx context.Context, phoneNumber string) error
 	GetUser(ctx context.Context, id string) (*entities.User, error)
 	UpdateUser(ctx context.Context, user *entities.User) error
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string) error

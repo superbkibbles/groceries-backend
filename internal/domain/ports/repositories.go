@@ -55,6 +55,7 @@ type UserRepository interface {
 	DeleteAddress(ctx context.Context, id string) error
 	GetAddressesByUserID(ctx context.Context, userID string) ([]*entities.Address, error)
 	SaveOTP(ctx context.Context, phoneNumber string, otp string) error
+	VerifyOTP(ctx context.Context, phoneNumber string, otp string) error
 }
 
 // ReviewRepository defines the interface for review data access

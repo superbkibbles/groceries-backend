@@ -218,3 +218,27 @@ func (r *UserRepository) SaveOTP(ctx context.Context, phoneNumber string, otp st
 	}
 	return nil
 }
+
+func (r *UserRepository) VerifyOTP(ctx context.Context, phoneNumber string, otp string) error {
+	// Get OTP from Redis
+	storedOTP, err := r.redisClient.Get(ctx, phoneNumber).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return errors.New("OTP not found or expired")
+		}
+		return err
+	}
+
+	// Compare OTPs
+	if storedOTP != otp {
+		return nil
+	}
+
+	// Delete OTP from Redis after successful verification
+	err = r.redisClient.Del(ctx, phoneNumber).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -27,7 +27,7 @@ func NewUserHandler(router *gin.RouterGroup, userService ports.UserService, orde
 		// Authentication routes
 		users.POST("/register", handler.Register)
 		users.POST("/login", handler.Login)
-
+		users.POST("/send-otp", handler.SendOTP)
 		// Current user route (protected by auth middleware)
 		users.GET("/me", AuthRequired(), handler.GetCurrentUser)
 
@@ -174,6 +174,34 @@ func (h *UserHandler) Login(c *gin.Context) {
 		User:  user,
 		Token: token,
 	})
+}
+
+// Login godoc
+// @Summary Send OTP
+// @Description Saves OTP Inside redis and send send it to phone number
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Send OTP credentials"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /users/send-otp [post]
+func (h *UserHandler) SendOTP(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	err := h.userService.SendOTP(c.Request.Context(), req.PhoneNumber)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully"})
 }
 
 // GetUser godoc
