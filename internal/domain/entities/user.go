@@ -78,6 +78,9 @@ func NewUser(email, password, firstName, lastName string, role UserRole) (*User,
 
 // ValidatePassword checks if the provided password matches the stored hash
 func (u *User) ValidatePassword(password string) bool {
+	if u.PasswordHash == "" {
+		return false
+	}
 	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 	return err == nil
 }

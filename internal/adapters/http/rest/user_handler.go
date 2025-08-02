@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -64,6 +65,12 @@ type LoginRequest struct {
 	// Email    string `json:"email" binding:"required,email"`
 	// Password string `json:"password" binding:"required"`
 	PhoneNumber string `json:"phone_number" binding:"required"`
+}
+
+// LoginRequestAdmin represents the request body for admin login
+type LoginRequestAdmin struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }
 
 // LoginResponse represents the response for a successful login
@@ -151,29 +158,60 @@ func (h *UserHandler) Register(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /users/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
+	log.Println("Login triggered")
+	// check if user is admin login with email and password
+	userRole := c.Request.Header.Get("user_role")
+	log.Println("userRole", userRole)
+	if userRole != "" && userRole == string(entities.UserRoleAdmin) {
+		// Handle admin login with email and password
+		var req LoginRequestAdmin
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		user, token, err := h.userService.LoginAdmin(
+			c.Request.Context(),
+			req.Email,
+			req.Password,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, LoginResponse{
+			User:  user,
+			Token: token,
+		})
+	} else {
+		// Handle user login with phone number
+		var req LoginRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		user, token, err := h.userService.Login(
+			c.Request.Context(),
+			req.PhoneNumber,
+		)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		// Don't return the password hash
+		user.PasswordHash = ""
+
+		c.JSON(http.StatusOK, LoginResponse{
+			User:  user,
+			Token: token,
+		})
 	}
 
-	user, token, err := h.userService.Login(
-		c.Request.Context(),
-		req.PhoneNumber,
-	)
-
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	// Don't return the password hash
-	user.PasswordHash = ""
-
-	c.JSON(http.StatusOK, LoginResponse{
-		User:  user,
-		Token: token,
-	})
 }
 
 // Login godoc

@@ -23,7 +23,7 @@ type UserService struct {
 }
 
 // NewUserService creates a new user service
-func NewUserService(userRepo ports.UserRepository) *UserService {
+func NewUserService(userRepo ports.UserRepository) ports.UserService {
 	return &UserService{
 		userRepo:  userRepo,
 		smsConfig: config.NewSMSConfig(),
@@ -125,6 +125,42 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 		}); err != nil {
 			return nil, "", err
 		}
+	}
+
+	// Generate JWT token
+	token, err := generateJWT(user)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return user, token, nil
+}
+
+func (s *UserService) LoginAdmin(ctx context.Context, email, password string) (*entities.User, string, error) {
+	// validate input and check if email is valid
+	if email == "" || password == "" {
+		return nil, "", errors.New("email and password are required")
+	}
+
+	// Get user by email
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// check if user does not exists
+	if user == nil {
+		return nil, "", errors.New("invalid email or password")
+	}
+
+	// check if user is admin
+	if user.Role != entities.UserRoleAdmin {
+		return nil, "", errors.New("user is not an admin")
+	}
+
+	// check if passwords match
+	if !user.ValidatePassword(password) {
+		return nil, "", errors.New("invalid email or password")
 	}
 
 	// Generate JWT token

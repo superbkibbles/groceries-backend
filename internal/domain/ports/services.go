@@ -37,7 +37,8 @@ type OrderService interface {
 // UserService defines the interface for user business logic
 type UserService interface {
 	Register(ctx context.Context, email, password, firstName, lastName string) (*entities.User, error)
-	Login(ctx context.Context, phoneNumber string) (*entities.User, string, error) // Returns user, token, error
+	Login(ctx context.Context, phoneNumber string) (*entities.User, string, error)          // Returns user, token, error
+	LoginAdmin(ctx context.Context, email, password string) (*entities.User, string, error) // Returns user, token, error
 	SendOTP(ctx context.Context, phoneNumber string) error
 	GetUser(ctx context.Context, id string) (*entities.User, error)
 	UpdateUser(ctx context.Context, user *entities.User) error
