@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -31,7 +32,7 @@ func (r *OrderRepository) Create(ctx context.Context, order *entities.Order) err
 }
 
 // GetByID retrieves an order by its ID
-func (r *OrderRepository) GetByID(ctx context.Context, id string) (*entities.Order, error) {
+func (r *OrderRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Order, error) {
 	var order entities.Order
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&order)
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *OrderRepository) Update(ctx context.Context, order *entities.Order) err
 }
 
 // Delete removes an order from the database
-func (r *OrderRepository) Delete(ctx context.Context, id string) error {
+func (r *OrderRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
@@ -95,7 +96,7 @@ func (r *OrderRepository) List(ctx context.Context, filter map[string]interface{
 }
 
 // GetByCustomerID retrieves orders for a specific customer with pagination
-func (r *OrderRepository) GetByCustomerID(ctx context.Context, customerID string, page, limit int) ([]*entities.Order, int, error) {
+func (r *OrderRepository) GetByCustomerID(ctx context.Context, customerID primitive.ObjectID, page, limit int) ([]*entities.Order, int, error) {
 	filter := bson.M{"customer_id": customerID}
 	return r.List(ctx, filter, page, limit)
 }

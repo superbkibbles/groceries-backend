@@ -26,7 +26,7 @@ type MongoDBConfig struct {
 func LoadConfig() (*Config, error) {
 	port := getEnv("SERVER_PORT", "8080")
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
-	mongoDB := getEnv("MONGO_DB", "ecommerce")
+	mongoDB := getEnv("MONGO_DB", "durra")
 
 	return &Config{
 		Server: ServerConfig{

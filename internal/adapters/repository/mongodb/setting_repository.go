@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -51,7 +52,7 @@ func (r *SettingRepository) Create(ctx context.Context, setting *entities.Settin
 }
 
 // GetByID retrieves a setting by its ID
-func (r *SettingRepository) GetByID(ctx context.Context, id string) (*entities.Setting, error) {
+func (r *SettingRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Setting, error) {
 	var setting entities.Setting
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&setting)
 	if err != nil {
@@ -80,7 +81,7 @@ func (r *SettingRepository) GetByKey(ctx context.Context, key string) (*entities
 }
 
 // GetUserSettingByKey retrieves a user setting by its key and user ID
-func (r *SettingRepository) GetUserSettingByKey(ctx context.Context, key string, userID string) (*entities.Setting, error) {
+func (r *SettingRepository) GetUserSettingByKey(ctx context.Context, key string, userID primitive.ObjectID) (*entities.Setting, error) {
 	var setting entities.Setting
 	err := r.collection.FindOne(ctx, bson.M{
 		"key":     key,
@@ -103,7 +104,7 @@ func (r *SettingRepository) Update(ctx context.Context, setting *entities.Settin
 }
 
 // Delete deletes a setting by its ID
-func (r *SettingRepository) Delete(ctx context.Context, id string) error {
+func (r *SettingRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
@@ -149,7 +150,7 @@ func (r *SettingRepository) ListSystemSettings(ctx context.Context, filter map[s
 }
 
 // ListUserSettings retrieves all settings for a specific user
-func (r *SettingRepository) ListUserSettings(ctx context.Context, userID string, filter map[string]interface{}, page, limit int) ([]*entities.Setting, int, error) {
+func (r *SettingRepository) ListUserSettings(ctx context.Context, userID primitive.ObjectID, filter map[string]interface{}, page, limit int) ([]*entities.Setting, int, error) {
 	// Add scope and user ID filters
 	filterBson := bson.M{
 		"scope":   entities.SettingScopeUser,

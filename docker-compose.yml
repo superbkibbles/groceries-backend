@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: groceries-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: groceries_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - groceries-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: groceries-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - groceries-network
+
+  # Optional: MongoDB Express for database management
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: groceries-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongodb
+    networks:
+      - groceries-network
+    profiles:
+      - tools
+
+  # Optional: Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: groceries-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - groceries-network
+    profiles:
+      - tools
+
+  # The main application (uncomment when ready to containerize)
+  # app:
+  #   build: .
+  #   container_name: groceries-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - MONGODB_URI=mongodb://admin:password@mongodb:27017/groceries_db?authSource=admin
+  #     - REDIS_URL=redis:6379
+  #     - GIN_MODE=release
+  #   depends_on:
+  #     - mongodb
+  #     - redis
+  #   networks:
+  #     - groceries-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  groceries-network:
+    driver: bridge

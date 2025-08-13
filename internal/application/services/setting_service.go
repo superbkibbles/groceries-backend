@@ -7,6 +7,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // SettingService implements the setting service interface
@@ -47,14 +48,20 @@ func (s *SettingService) CreateSystemSetting(ctx context.Context, key string, va
 
 // CreateUserSetting creates a new user-specific setting
 func (s *SettingService) CreateUserSetting(ctx context.Context, key string, value interface{}, settingType entities.SettingType, description string, userID string) (*entities.Setting, error) {
+	// Convert userID to ObjectID
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+
 	// Check if setting already exists for this user
-	existing, err := s.settingRepo.GetUserSettingByKey(ctx, key, userID)
+	existing, err := s.settingRepo.GetUserSettingByKey(ctx, key, userObjectID)
 	if err == nil && existing != nil {
 		return nil, errors.New("user setting already exists")
 	}
 
 	// Create new setting
-	setting := entities.NewUserSetting(key, value, settingType, description, userID)
+	setting := entities.NewUserSetting(key, value, settingType, description, userObjectID)
 
 	// Validate setting
 	if err := setting.Validate(); err != nil {
@@ -76,7 +83,11 @@ func (s *SettingService) GetSystemSetting(ctx context.Context, key string) (*ent
 
 // GetUserSetting retrieves a user setting by its key and user ID
 func (s *SettingService) GetUserSetting(ctx context.Context, key string, userID string) (*entities.Setting, error) {
-	return s.settingRepo.GetUserSettingByKey(ctx, key, userID)
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	return s.settingRepo.GetUserSettingByKey(ctx, key, userObjectID)
 }
 
 // UpdateSetting updates an existing setting
@@ -103,7 +114,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, setting *entities.Se
 
 // DeleteSetting deletes a setting by its ID
 func (s *SettingService) DeleteSetting(ctx context.Context, id string) error {
-	return s.settingRepo.Delete(ctx, id)
+	settingID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.New("invalid setting ID")
+	}
+	return s.settingRepo.Delete(ctx, settingID)
 }
 
 // ListSystemSettings retrieves all system settings with optional filtering
@@ -113,5 +128,9 @@ func (s *SettingService) ListSystemSettings(ctx context.Context, filter map[stri
 
 // ListUserSettings retrieves all settings for a specific user
 func (s *SettingService) ListUserSettings(ctx context.Context, userID string, filter map[string]interface{}, page, limit int) ([]*entities.Setting, int, error) {
-	return s.settingRepo.ListUserSettings(ctx, userID, filter, page, limit)
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, 0, errors.New("invalid user ID")
+	}
+	return s.settingRepo.ListUserSettings(ctx, userObjectID, filter, page, limit)
 }

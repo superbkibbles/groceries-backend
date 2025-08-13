@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ProductHandler handles HTTP requests for products
@@ -27,34 +28,28 @@ func NewProductHandler(router *gin.RouterGroup, productService ports.ProductServ
 		products.PUT("/:id", handler.UpdateProduct)
 		products.DELETE("/:id", handler.DeleteProduct)
 		products.GET("/category/:category", handler.GetProductsByCategory)
-
-		// Variation routes
-		products.POST("/:id/variations", handler.AddVariation)
-		products.PUT("/:id/variations/:variationId", handler.UpdateVariation)
-		products.DELETE("/:id/variations/:variationId", handler.RemoveVariation)
-		products.PUT("/:id/variations/:variationId/stock", handler.UpdateStock)
+		products.PUT("/:id/stock", handler.UpdateStock)
 	}
 }
 
 // CreateProductRequest represents the request body for creating a product
 type CreateProductRequest struct {
-	Name        string   `json:"name" binding:"required"`
-	Description string   `json:"description"`
-	BasePrice   float64  `json:"base_price" binding:"required,gt=0"`
-	Categories  []string `json:"categories"`
+	Name          string                 `json:"name" binding:"required"`
+	Description   string                 `json:"description"`
+	Categories    []string               `json:"categories"`
+	Attributes    map[string]interface{} `json:"attributes"`
+	SKU           string                 `json:"sku" binding:"required"`
+	Price         float64                `json:"price" binding:"required,gt=0"`
+	StockQuantity int                    `json:"stock_quantity" binding:"required,gte=0"`
+	Images        []string               `json:"images"`
 }
 
 // UpdateProductRequest represents the request body for updating a product
 type UpdateProductRequest struct {
-	Name        string   `json:"name" binding:"required"`
-	Description string   `json:"description"`
-	BasePrice   float64  `json:"base_price" binding:"required,gt=0"`
-	Categories  []string `json:"categories"`
-}
-
-// VariationRequest represents the request body for adding/updating a variation
-type VariationRequest struct {
-	Attributes    map[string]interface{} `json:"attributes" binding:"required"`
+	Name          string                 `json:"name" binding:"required"`
+	Description   string                 `json:"description"`
+	Categories    []string               `json:"categories"`
+	Attributes    map[string]interface{} `json:"attributes"`
 	SKU           string                 `json:"sku" binding:"required"`
 	Price         float64                `json:"price" binding:"required,gt=0"`
 	StockQuantity int                    `json:"stock_quantity" binding:"required,gte=0"`
@@ -84,7 +79,17 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	product, err := h.productService.CreateProduct(c.Request.Context(), req.Name, req.Description, req.BasePrice, req.Categories)
+	product, err := h.productService.CreateProduct(
+		c.Request.Context(),
+		req.Name,
+		req.Description,
+		req.Categories,
+		req.Attributes,
+		req.SKU,
+		req.Price,
+		req.StockQuantity,
+		req.Images,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -148,8 +153,23 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	// Update product fields
 	product.Name = req.Name
 	product.Description = req.Description
-	product.BasePrice = req.BasePrice
-	product.Categories = req.Categories
+
+	// Convert string categories to ObjectIDs
+	categoryIDs := make([]primitive.ObjectID, len(req.Categories))
+	for i, catStr := range req.Categories {
+		catID, err := primitive.ObjectIDFromHex(catStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid category ID: " + catStr})
+			return
+		}
+		categoryIDs[i] = catID
+	}
+	product.Categories = categoryIDs
+	product.Attributes = req.Attributes
+	product.SKU = req.SKU
+	product.Price = req.Price
+	product.StockQuantity = req.StockQuantity
+	product.Images = req.Images
 
 	// Save changes
 	err = h.productService.UpdateProduct(c.Request.Context(), product)
@@ -246,142 +266,21 @@ func (h *ProductHandler) GetProductsByCategory(c *gin.Context) {
 	})
 }
 
-// AddVariation godoc
-// @Summary Add a variation to a product
-// @Description Add a new variation to an existing product
-// @Tags products
-// @Accept json
-// @Produce json
-// @Param id path string true "Product ID"
-// @Param variation body VariationRequest true "Variation details"
-// @Success 201 {object} entities.Variation
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /products/{id}/variations [post]
-func (h *ProductHandler) AddVariation(c *gin.Context) {
-	productID := c.Param("id")
-
-	var req VariationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	variation, err := h.productService.AddVariation(
-		c.Request.Context(),
-		productID,
-		req.Attributes,
-		req.SKU,
-		req.Price,
-		req.StockQuantity,
-		req.Images,
-	)
-
-	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err.Error() == "product not found" {
-			statusCode = http.StatusNotFound
-		}
-		c.JSON(statusCode, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, variation)
-}
-
-// UpdateVariation godoc
-// @Summary Update a product variation
-// @Description Update an existing variation of a product
-// @Tags products
-// @Accept json
-// @Produce json
-// @Param id path string true "Product ID"
-// @Param variationId path string true "Variation ID"
-// @Param variation body VariationRequest true "Updated variation details"
-// @Success 200 {string} string "Variation updated successfully"
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /products/{id}/variations/{variationId} [put]
-func (h *ProductHandler) UpdateVariation(c *gin.Context) {
-	productID := c.Param("id")
-	variationID := c.Param("variationId")
-
-	var req VariationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	err := h.productService.UpdateVariation(
-		c.Request.Context(),
-		productID,
-		variationID,
-		req.Attributes,
-		req.SKU,
-		req.Price,
-		req.StockQuantity,
-		req.Images,
-	)
-
-	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err.Error() == "product not found" || err.Error() == "variation not found" {
-			statusCode = http.StatusNotFound
-		}
-		c.JSON(statusCode, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Variation updated successfully"})
-}
-
-// RemoveVariation godoc
-// @Summary Remove a product variation
-// @Description Remove a variation from a product
-// @Tags products
-// @Produce json
-// @Param id path string true "Product ID"
-// @Param variationId path string true "Variation ID"
-// @Success 204 "No Content"
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /products/{id}/variations/{variationId} [delete]
-func (h *ProductHandler) RemoveVariation(c *gin.Context) {
-	productID := c.Param("id")
-	variationID := c.Param("variationId")
-
-	err := h.productService.RemoveVariation(c.Request.Context(), productID, variationID)
-	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err.Error() == "product not found" || err.Error() == "variation not found" {
-			statusCode = http.StatusNotFound
-		}
-		c.JSON(statusCode, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
 // UpdateStock godoc
-// @Summary Update variation stock
-// @Description Update the stock quantity of a product variation
+// @Summary Update product stock
+// @Description Update the stock quantity of a product
 // @Tags products
 // @Accept json
 // @Produce json
 // @Param id path string true "Product ID"
-// @Param variationId path string true "Variation ID"
 // @Param stock body StockUpdateRequest true "Stock update details"
 // @Success 200 {string} string "Stock updated successfully"
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /products/{id}/variations/{variationId}/stock [put]
+// @Router /products/{id}/stock [put]
 func (h *ProductHandler) UpdateStock(c *gin.Context) {
 	productID := c.Param("id")
-	variationID := c.Param("variationId")
 
 	var req StockUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -389,10 +288,10 @@ func (h *ProductHandler) UpdateStock(c *gin.Context) {
 		return
 	}
 
-	err := h.productService.UpdateStock(c.Request.Context(), productID, variationID, req.Quantity)
+	err := h.productService.UpdateStock(c.Request.Context(), productID, req.Quantity)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
-		if err.Error() == "product not found" || err.Error() == "variation not found" {
+		if err.Error() == "product not found" {
 			statusCode = http.StatusNotFound
 		}
 		c.JSON(statusCode, ErrorResponse{Error: err.Error()})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -58,7 +59,7 @@ func (r *ReviewRepository) Create(ctx context.Context, review *entities.Review) 
 }
 
 // GetByID retrieves a review by its ID
-func (r *ReviewRepository) GetByID(ctx context.Context, id string) (*entities.Review, error) {
+func (r *ReviewRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Review, error) {
 	var review entities.Review
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&review)
 	if err != nil {
@@ -163,7 +164,7 @@ func (r *ReviewRepository) GetByOrderID(ctx context.Context, orderID string) ([]
 
 // CheckUserReviewEligibility checks if a user is eligible to review a product
 // A user is eligible if they have purchased the product in a completed order
-func (r *ReviewRepository) CheckUserReviewEligibility(ctx context.Context, userID string, productID string) (bool, error) {
+func (r *ReviewRepository) CheckUserReviewEligibility(ctx context.Context, userID primitive.ObjectID, productID primitive.ObjectID) (bool, error) {
 	// Find orders by this user that contain this product and are delivered
 	filter := bson.M{
 		"customer_id":      userID,

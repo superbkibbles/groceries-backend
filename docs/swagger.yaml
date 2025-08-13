@@ -66,8 +66,6 @@ definitions:
         type: number
       updated_at:
         type: string
-      variation_id:
-        type: string
     type: object
   entities.Category:
     properties:
@@ -221,8 +219,6 @@ definitions:
         type: string
       subtotal:
         type: number
-      variation_id:
-        type: string
     type: object
   entities.OrderStatus:
     enum:
@@ -306,8 +302,9 @@ definitions:
     - PaymentMethodCryptocurrency
   entities.Product:
     properties:
-      base_price:
-        type: number
+      attributes:
+        additionalProperties: true
+        type: object
       categories:
         description: Category IDs the product belongs to
         items:
@@ -319,14 +316,20 @@ definitions:
         type: string
       id:
         type: string
+      images:
+        items:
+          type: string
+        type: array
       name:
         type: string
+      price:
+        type: number
+      sku:
+        type: string
+      stock_quantity:
+        type: integer
       updated_at:
         type: string
-      variations:
-        items:
-          $ref: '#/definitions/entities.Variation'
-        type: array
     type: object
   entities.ShippingInfo:
     properties:
@@ -441,24 +444,6 @@ definitions:
     x-enum-varnames:
     - UserRoleCustomer
     - UserRoleAdmin
-  entities.Variation:
-    properties:
-      attributes:
-        additionalProperties: true
-        type: object
-      id:
-        type: string
-      images:
-        items:
-          type: string
-        type: array
-      price:
-        type: number
-      sku:
-        type: string
-      stock_quantity:
-        type: integer
-    type: object
   entities.Wishlist:
     properties:
       created_at:
@@ -481,8 +466,6 @@ definitions:
       id:
         type: string
       product_id:
-        type: string
-      variation_id:
         type: string
     type: object
   rest.AddItemRequest:
@@ -668,19 +651,33 @@ definitions:
     type: object
   rest.CreateProductRequest:
     properties:
-      base_price:
-        type: number
+      attributes:
+        additionalProperties: true
+        type: object
       categories:
         items:
           type: string
         type: array
       description:
         type: string
+      images:
+        items:
+          type: string
+        type: array
       name:
         type: string
+      price:
+        type: number
+      sku:
+        type: string
+      stock_quantity:
+        minimum: 0
+        type: integer
     required:
-    - base_price
     - name
+    - price
+    - sku
+    - stock_quantity
     type: object
   rest.CreateShippingMethodRequest:
     properties:
@@ -754,12 +751,9 @@ definitions:
         type: string
       quantity:
         type: integer
-      variation_id:
-        type: string
     required:
     - product_id
     - quantity
-    - variation_id
     type: object
   rest.PaginatedResponse:
     properties:
@@ -833,11 +827,8 @@ definitions:
     properties:
       product_id:
         type: string
-      variation_id:
-        type: string
     required:
     - product_id
-    - variation_id
     type: object
   rest.SendOrderStatusNotificationRequest:
     properties:
@@ -913,19 +904,33 @@ definitions:
     type: object
   rest.UpdateProductRequest:
     properties:
-      base_price:
-        type: number
+      attributes:
+        additionalProperties: true
+        type: object
       categories:
         items:
           type: string
         type: array
       description:
         type: string
+      images:
+        items:
+          type: string
+        type: array
       name:
         type: string
+      price:
+        type: number
+      sku:
+        type: string
+      stock_quantity:
+        minimum: 0
+        type: integer
     required:
-    - base_price
     - name
+    - price
+    - sku
+    - stock_quantity
     type: object
   rest.UpdateQuantityRequest:
     properties:
@@ -951,28 +956,6 @@ definitions:
     required:
     - first_name
     - last_name
-    type: object
-  rest.VariationRequest:
-    properties:
-      attributes:
-        additionalProperties: true
-        type: object
-      images:
-        items:
-          type: string
-        type: array
-      price:
-        type: number
-      sku:
-        type: string
-      stock_quantity:
-        minimum: 0
-        type: integer
-    required:
-    - attributes
-    - price
-    - sku
-    - stock_quantity
     type: object
 host: localhost:8080
 info:
@@ -3701,132 +3684,15 @@ paths:
       summary: Update a product
       tags:
       - products
-  /products/{id}/variations:
-    post:
-      consumes:
-      - application/json
-      description: Add a new variation to an existing product
-      parameters:
-      - description: Product ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Variation details
-        in: body
-        name: variation
-        required: true
-        schema:
-          $ref: '#/definitions/rest.VariationRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/entities.Variation'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-      summary: Add a variation to a product
-      tags:
-      - products
-  /products/{id}/variations/{variationId}:
-    delete:
-      description: Remove a variation from a product
-      parameters:
-      - description: Product ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Variation ID
-        in: path
-        name: variationId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-      summary: Remove a product variation
-      tags:
-      - products
+  /products/{id}/stock:
     put:
       consumes:
       - application/json
-      description: Update an existing variation of a product
+      description: Update the stock quantity of a product
       parameters:
       - description: Product ID
         in: path
         name: id
-        required: true
-        type: string
-      - description: Variation ID
-        in: path
-        name: variationId
-        required: true
-        type: string
-      - description: Updated variation details
-        in: body
-        name: variation
-        required: true
-        schema:
-          $ref: '#/definitions/rest.VariationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Variation updated successfully
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rest.ErrorResponse'
-      summary: Update a product variation
-      tags:
-      - products
-  /products/{id}/variations/{variationId}/stock:
-    put:
-      consumes:
-      - application/json
-      description: Update the stock quantity of a product variation
-      parameters:
-      - description: Product ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Variation ID
-        in: path
-        name: variationId
         required: true
         type: string
       - description: Stock update details
@@ -3854,7 +3720,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/rest.ErrorResponse'
-      summary: Update variation stock
+      summary: Update product stock
       tags:
       - products
   /products/category/{category}:

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // SettingHandler handles HTTP requests for settings
@@ -283,7 +284,13 @@ func (h *SettingHandler) UpdateUserSetting(c *gin.Context) {
 	}
 
 	// Verify ownership
-	if setting.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	if setting.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to update this setting"})
 		return
 	}
@@ -320,7 +327,13 @@ func (h *SettingHandler) DeleteUserSetting(c *gin.Context) {
 	}
 
 	// Verify ownership
-	if setting.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	if setting.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to delete this setting"})
 		return
 	}

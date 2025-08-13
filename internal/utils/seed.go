@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/superbkibbles/ecommerce/internal/adapters/repository/mongodb"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -62,9 +63,9 @@ func seedCategories(ctx context.Context, repo *mongodb.CategoryRepository) (map[
 	categories := make(map[string]*entities.Category)
 
 	// Create main categories
-	electronics := entities.NewCategory("Electronics", "Electronic devices and gadgets", "electronics", "")
-	clothing := entities.NewCategory("Clothing", "Apparel and fashion items", "clothing", "")
-	home := entities.NewCategory("Home & Kitchen", "Home goods and kitchen appliances", "home-kitchen", "")
+	electronics := entities.NewCategory("Electronics", "Electronic devices and gadgets", "electronics", primitive.NilObjectID)
+	clothing := entities.NewCategory("Clothing", "Apparel and fashion items", "clothing", primitive.NilObjectID)
+	home := entities.NewCategory("Home & Kitchen", "Home goods and kitchen appliances", "home-kitchen", primitive.NilObjectID)
 
 	// Create subcategories for Electronics
 	smartphones := entities.NewCategory("Smartphones", "Mobile phones and accessories", "smartphones", electronics.ID)
@@ -111,185 +112,69 @@ func seedProducts(ctx context.Context, repo *mongodb.ProductRepository, categori
 	products := make(map[string]*entities.Product)
 
 	// Smartphone products
-	smartphoneCategories := []string{categories["Electronics"].ID, categories["Smartphones"].ID}
+	smartphoneCategories := []primitive.ObjectID{categories["Electronics"].ID, categories["Smartphones"].ID}
 	iphone := entities.NewProduct(
 		"iPhone 13 Pro",
 		"Apple's flagship smartphone with A15 Bionic chip and Pro camera system",
-		999.99,
 		smartphoneCategories,
+		map[string]interface{}{
+			"color":   "Graphite",
+			"storage": 128,
+		},
+		"IP13-GRA-128",
+		999.99,
+		50,
+		[]string{"iphone13-graphite.jpg"},
 	)
 
-	// Add iPhone variations
-	iPhoneColors := []string{"Graphite", "Gold", "Silver", "Sierra Blue"}
-	iPhoneStorage := []int{128, 256, 512, 1024}
-
-	for _, color := range iPhoneColors {
-		for _, storage := range iPhoneStorage {
-			attributes := map[string]interface{}{
-				"color":   color,
-				"storage": storage,
-			}
-
-			// Price increases with storage size
-			price := 999.99
-			switch storage {
-			case 256:
-				price = 1099.99
-			case 512:
-				price = 1299.99
-			case 1024:
-				price = 1499.99
-			}
-
-			sku := "IP13-" + color[:3] + "-" + string(rune(storage/128+64))
-			images := []string{"iphone13-" + color + ".jpg"}
-
-			_, err := iphone.AddVariation(attributes, sku, price, 50, images)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// Laptop product
-	laptopCategories := []string{categories["Electronics"].ID, categories["Laptops"].ID}
+	laptopCategories := []primitive.ObjectID{categories["Electronics"].ID, categories["Laptops"].ID}
 	macbook := entities.NewProduct(
 		"MacBook Pro 16",
 		"Powerful laptop for professionals with M1 Pro or M1 Max chip",
-		2499.99,
 		laptopCategories,
+		map[string]interface{}{
+			"chip":    "M1 Pro",
+			"ram":     16,
+			"storage": 512,
+		},
+		"MBP16-PRO-16-512",
+		2499.99,
+		20,
+		[]string{"macbook-pro-16.jpg"},
 	)
 
-	// Add MacBook variations
-	macbookChips := []string{"M1 Pro", "M1 Max"}
-	macbookRAM := []int{16, 32, 64}
-	macbookStorage := []int{512, 1024, 2048, 4096}
-
-	for _, chip := range macbookChips {
-		for _, ram := range macbookRAM {
-			// Skip invalid combinations
-			if chip == "M1 Pro" && ram == 64 {
-				continue
-			}
-
-			for _, storage := range macbookStorage {
-				attributes := map[string]interface{}{
-					"chip":    chip,
-					"ram":     ram,
-					"storage": storage,
-				}
-
-				// Base price for M1 Pro with 16GB RAM and 512GB storage
-				price := 2499.99
-
-				// Add for chip upgrade
-				if chip == "M1 Max" {
-					price += 200
-				}
-
-				// Add for RAM upgrade
-				if ram == 32 {
-					price += 400
-				} else if ram == 64 {
-					price += 800
-				}
-
-				// Add for storage upgrade
-				switch storage {
-				case 1024:
-					price += 200
-				case 2048:
-					price += 600
-				case 4096:
-					price += 1200
-				}
-
-				sku := "MBP16-" + chip[3:] + "-" + string(rune(ram/16+64)) + "-" + string(rune(storage/512+64))
-				images := []string{"macbook-pro-16.jpg"}
-
-				_, err := macbook.AddVariation(attributes, sku, price, 20, images)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
 	// Clothing product
-	shirtCategories := []string{categories["Clothing"].ID, categories["Men's Clothing"].ID}
+	shirtCategories := []primitive.ObjectID{categories["Clothing"].ID, categories["Men's Clothing"].ID}
 	tshirt := entities.NewProduct(
 		"Premium Cotton T-Shirt",
 		"Soft, comfortable 100% cotton t-shirt",
-		29.99,
 		shirtCategories,
+		map[string]interface{}{
+			"color": "Black",
+			"size":  "M",
+		},
+		"TS-BL-M",
+		29.99,
+		100,
+		[]string{"tshirt-black.jpg"},
 	)
 
-	// Add T-shirt variations
-	tshirtColors := []string{"Black", "White", "Navy", "Gray", "Red"}
-	tshirtSizes := []string{"S", "M", "L", "XL", "XXL"}
-
-	for _, color := range tshirtColors {
-		for _, size := range tshirtSizes {
-			attributes := map[string]interface{}{
-				"color": color,
-				"size":  size,
-			}
-
-			// Larger sizes cost slightly more
-			price := 29.99
-			if size == "XL" {
-				price = 32.99
-			} else if size == "XXL" {
-				price = 34.99
-			}
-
-			sku := "TS-" + color[:2] + "-" + size
-			images := []string{"tshirt-" + color + ".jpg"}
-
-			_, err := tshirt.AddVariation(attributes, sku, price, 100, images)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// Kitchen product
-	kitchenCategories := []string{categories["Home & Kitchen"].ID, categories["Kitchen Appliances"].ID}
+	kitchenCategories := []primitive.ObjectID{categories["Home & Kitchen"].ID, categories["Kitchen Appliances"].ID}
 	blender := entities.NewProduct(
 		"High-Performance Blender",
 		"Powerful blender for smoothies, soups, and more",
-		149.99,
 		kitchenCategories,
+		map[string]interface{}{
+			"color":   "Black",
+			"wattage": 600,
+		},
+		"BL-BL-600",
+		149.99,
+		30,
+		[]string{"blender-black.jpg"},
 	)
-
-	// Add blender variations
-	blenderColors := []string{"Black", "Silver", "Red"}
-	blenderWattages := []int{600, 900, 1200}
-
-	for _, color := range blenderColors {
-		for _, wattage := range blenderWattages {
-			attributes := map[string]interface{}{
-				"color":   color,
-				"wattage": wattage,
-			}
-
-			// Higher wattage costs more
-			price := 149.99
-			if wattage == 900 {
-				price = 179.99
-			} else if wattage == 1200 {
-				price = 199.99
-			}
-
-			sku := "BL-" + color[:2] + "-" + string(rune(wattage/300+64))
-			images := []string{"blender-" + color + ".jpg"}
-
-			_, err := blender.AddVariation(attributes, sku, price, 30, images)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	// Save all products
 	for _, product := range []*entities.Product{iphone, macbook, tshirt, blender} {
@@ -371,8 +256,8 @@ func seedUsers(ctx context.Context, repo *mongodb.UserRepository) (map[string]*e
 }
 
 // seedOrders creates sample orders
-func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[string]*entities.User, products map[string]*entities.Product) (map[string]*entities.Order, error) {
-	orders := make(map[string]*entities.Order)
+func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[string]*entities.User, products map[string]*entities.Product) (map[primitive.ObjectID]*entities.Order, error) {
+	orders := make(map[primitive.ObjectID]*entities.Order)
 
 	// Get John's user ID
 	john := users["john@example.com"]
@@ -400,28 +285,24 @@ func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[st
 
 	// Add iPhone to John's order
 	iphone := products["iPhone 13 Pro"]
-	iphoneVariation := iphone.Variations[0] // First variation
 	johnOrder.Items = append(johnOrder.Items, &entities.OrderItem{
-		ProductID:   iphone.ID,
-		VariationID: iphoneVariation.ID,
-		SKU:         iphoneVariation.SKU,
-		Name:        iphone.Name,
-		Price:       iphoneVariation.Price,
-		Quantity:    1,
-		Subtotal:    iphoneVariation.Price * 1,
+		ProductID: iphone.ID,
+		SKU:       iphone.SKU,
+		Name:      iphone.Name,
+		Price:     iphone.Price,
+		Quantity:  1,
+		Subtotal:  iphone.Price * 1,
 	})
 
 	// Add T-shirt to John's order
 	tshirt := products["Premium Cotton T-Shirt"]
-	tshirtVariation := tshirt.Variations[0] // First variation
 	johnOrder.Items = append(johnOrder.Items, &entities.OrderItem{
-		ProductID:   tshirt.ID,
-		VariationID: tshirtVariation.ID,
-		SKU:         tshirtVariation.SKU,
-		Name:        tshirt.Name,
-		Price:       tshirtVariation.Price,
-		Quantity:    2,
-		Subtotal:    tshirtVariation.Price * 2,
+		ProductID: tshirt.ID,
+		SKU:       tshirt.SKU,
+		Name:      tshirt.Name,
+		Price:     tshirt.Price,
+		Quantity:  2,
+		Subtotal:  tshirt.Price * 2,
 	})
 
 	// Calculate total amount
@@ -457,15 +338,13 @@ func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[st
 
 	// Add MacBook to Jane's order
 	macbook := products["MacBook Pro 16"]
-	macbookVariation := macbook.Variations[0] // First variation
 	janeOrder.Items = append(janeOrder.Items, &entities.OrderItem{
-		ProductID:   macbook.ID,
-		VariationID: macbookVariation.ID,
-		SKU:         macbookVariation.SKU,
-		Name:        macbook.Name,
-		Price:       macbookVariation.Price,
-		Quantity:    1,
-		Subtotal:    macbookVariation.Price * 1,
+		ProductID: macbook.ID,
+		SKU:       macbook.SKU,
+		Name:      macbook.Name,
+		Price:     macbook.Price,
+		Quantity:  1,
+		Subtotal:  macbook.Price * 1,
 	})
 
 	// Calculate total amount
@@ -487,8 +366,8 @@ func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[st
 }
 
 // seedReviews creates sample reviews for products in orders
-func seedReviews(ctx context.Context, repo *mongodb.ReviewRepository, orders map[string]*entities.Order, users map[string]*entities.User, products map[string]*entities.Product) (map[string]*entities.Review, error) {
-	reviews := make(map[string]*entities.Review)
+func seedReviews(ctx context.Context, repo *mongodb.ReviewRepository, orders map[primitive.ObjectID]*entities.Order, users map[string]*entities.User, products map[string]*entities.Product) (map[primitive.ObjectID]*entities.Review, error) {
+	reviews := make(map[primitive.ObjectID]*entities.Review)
 
 	// Get users
 	john := users["john@example.com"]

@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -31,7 +32,7 @@ func (r *ProductRepository) Create(ctx context.Context, product *entities.Produc
 }
 
 // GetByID retrieves a product by its ID
-func (r *ProductRepository) GetByID(ctx context.Context, id string) (*entities.Product, error) {
+func (r *ProductRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Product, error) {
 	var product entities.Product
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&product)
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *ProductRepository) Update(ctx context.Context, product *entities.Produc
 }
 
 // Delete removes a product from the database
-func (r *ProductRepository) Delete(ctx context.Context, id string) error {
+func (r *ProductRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
@@ -95,32 +96,7 @@ func (r *ProductRepository) List(ctx context.Context, filter map[string]interfac
 }
 
 // GetByCategory retrieves products by category with pagination
-func (r *ProductRepository) GetByCategory(ctx context.Context, category string, page, limit int) ([]*entities.Product, int, error) {
+func (r *ProductRepository) GetByCategory(ctx context.Context, category primitive.ObjectID, page, limit int) ([]*entities.Product, int, error) {
 	filter := bson.M{"categories": category}
 	return r.List(ctx, filter, page, limit)
-}
-
-// UpdateStock updates the stock quantity for a specific product variation
-func (r *ProductRepository) UpdateStock(ctx context.Context, variationID string, quantity int) error {
-	// First, find the product containing the variation
-	filter := bson.M{"variations.id": variationID}
-	var product entities.Product
-	err := r.collection.FindOne(ctx, filter).Decode(&product)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return errors.New("variation not found")
-		}
-		return err
-	}
-
-	// Update the variation stock quantity
-	for i, variation := range product.Variations {
-		if variation.ID == variationID {
-			product.Variations[i].StockQuantity = quantity
-			break
-		}
-	}
-
-	// Save the updated product
-	return r.Update(ctx, &product)
 }

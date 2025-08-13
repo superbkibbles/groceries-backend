@@ -3,7 +3,7 @@ package entities
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // PaymentMethodType represents the type of payment method
@@ -18,7 +18,7 @@ const (
 
 // PaymentMethod represents a payment method available in the system
 type PaymentMethod struct {
-	ID          string                 `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	Name        string                 `json:"name" bson:"name"`
 	Description string                 `json:"description" bson:"description"`
 	Type        PaymentMethodType      `json:"type" bson:"type"`
@@ -30,7 +30,7 @@ type PaymentMethod struct {
 
 // PaymentGateway represents a payment gateway configuration
 type PaymentGateway struct {
-	ID        string                 `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	Name      string                 `json:"name" bson:"name"`
 	Provider  string                 `json:"provider" bson:"provider"`
 	Active    bool                   `json:"active" bson:"active"`
@@ -41,7 +41,7 @@ type PaymentGateway struct {
 
 // CustomerPaymentMethod represents a payment method saved by a customer
 type CustomerPaymentMethod struct {
-	ID              string    `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	CustomerID      string    `json:"customer_id" bson:"customer_id"`
 	PaymentMethodID string    `json:"payment_method_id" bson:"payment_method_id"`
 	Token           string    `json:"token" bson:"token"`
@@ -57,7 +57,6 @@ type CustomerPaymentMethod struct {
 func NewPaymentMethod(name, description string, methodType PaymentMethodType, config map[string]interface{}) *PaymentMethod {
 	now := time.Now()
 	return &PaymentMethod{
-		ID:          uuid.New().String(),
 		Name:        name,
 		Description: description,
 		Type:        methodType,
@@ -72,7 +71,6 @@ func NewPaymentMethod(name, description string, methodType PaymentMethodType, co
 func NewPaymentGateway(name, provider string, config map[string]interface{}) *PaymentGateway {
 	now := time.Now()
 	return &PaymentGateway{
-		ID:        uuid.New().String(),
 		Name:      name,
 		Provider:  provider,
 		Active:    true,
@@ -86,7 +84,6 @@ func NewPaymentGateway(name, provider string, config map[string]interface{}) *Pa
 func NewCustomerPaymentMethod(customerID, paymentMethodID, token string, last4 string, expiryMonth, expiryYear int, isDefault bool) *CustomerPaymentMethod {
 	now := time.Now()
 	return &CustomerPaymentMethod{
-		ID:              uuid.New().String(),
 		CustomerID:      customerID,
 		PaymentMethodID: paymentMethodID,
 		Token:           token,

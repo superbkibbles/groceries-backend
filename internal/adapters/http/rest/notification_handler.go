@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // NotificationHandler handles HTTP requests for notifications
@@ -168,7 +169,12 @@ func (h *NotificationHandler) GetNotification(c *gin.Context) {
 	}
 
 	// Ensure the notification belongs to the user
-	if notification.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
+		return
+	}
+	if notification.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "forbidden"})
 		return
 	}
@@ -254,7 +260,12 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 	}
 
 	// Ensure the notification belongs to the user
-	if notification.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
+		return
+	}
+	if notification.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "forbidden"})
 		return
 	}
@@ -298,7 +309,12 @@ func (h *NotificationHandler) MarkAsArchived(c *gin.Context) {
 	}
 
 	// Ensure the notification belongs to the user
-	if notification.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
+		return
+	}
+	if notification.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "forbidden"})
 		return
 	}
@@ -369,7 +385,12 @@ func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 	}
 
 	// Ensure the notification belongs to the user
-	if notification.UserID != userID.(string) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
+		return
+	}
+	if notification.UserID != userObjectID {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "forbidden"})
 		return
 	}

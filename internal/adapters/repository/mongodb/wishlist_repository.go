@@ -7,6 +7,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -42,7 +43,7 @@ func (r *WishlistRepository) GetByID(ctx context.Context, id string) (*entities.
 }
 
 // GetByUserID retrieves a wishlist by user ID
-func (r *WishlistRepository) GetByUserID(ctx context.Context, userID string) (*entities.Wishlist, error) {
+func (r *WishlistRepository) GetByUserID(ctx context.Context, userID primitive.ObjectID) (*entities.Wishlist, error) {
 	var wishlist entities.Wishlist
 	err := r.collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&wishlist)
 	if err != nil {

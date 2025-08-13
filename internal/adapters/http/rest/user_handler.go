@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // UserHandler handles HTTP requests for users
@@ -447,7 +448,12 @@ func (h *UserHandler) AddAddress(c *gin.Context) {
 // @Router /users/{id}/addresses/{addressId} [put]
 func (h *UserHandler) UpdateAddress(c *gin.Context) {
 	userID := c.Param("id")
-	addressID := c.Param("addressId")
+	addressIDStr := c.Param("addressId")
+	addressID, err := primitive.ObjectIDFromHex(addressIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid address ID"})
+		return
+	}
 
 	// Get existing addresses to verify ownership
 	addresses, err := h.userService.GetAddresses(c.Request.Context(), userID)
@@ -515,7 +521,12 @@ func (h *UserHandler) UpdateAddress(c *gin.Context) {
 // @Router /users/{id}/addresses/{addressId} [delete]
 func (h *UserHandler) DeleteAddress(c *gin.Context) {
 	userID := c.Param("id")
-	addressID := c.Param("addressId")
+	addressIDStr := c.Param("addressId")
+	addressID, err := primitive.ObjectIDFromHex(addressIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid address ID"})
+		return
+	}
 
 	// Get existing addresses to verify ownership
 	addresses, err := h.userService.GetAddresses(c.Request.Context(), userID)
@@ -565,7 +576,12 @@ func (h *UserHandler) DeleteAddress(c *gin.Context) {
 // @Router /users/{id}/addresses/{addressId}/default [put]
 func (h *UserHandler) SetDefaultAddress(c *gin.Context) {
 	userID := c.Param("id")
-	addressID := c.Param("addressId")
+	addressIDStr := c.Param("addressId")
+	addressID, err := primitive.ObjectIDFromHex(addressIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid address ID"})
+		return
+	}
 
 	// Get existing addresses to verify ownership
 	addresses, err := h.userService.GetAddresses(c.Request.Context(), userID)

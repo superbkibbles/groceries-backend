@@ -3,7 +3,7 @@ package entities
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // SettingScope defines the scope of a setting
@@ -32,22 +32,21 @@ const (
 
 // Setting represents a configuration setting in the e-commerce system
 type Setting struct {
-	ID          string       `json:"id" bson:"_id"`
-	Key         string       `json:"key" bson:"key"`
-	Value       interface{}  `json:"value" bson:"value"`
-	Type        SettingType  `json:"type" bson:"type"`
-	Scope       SettingScope `json:"scope" bson:"scope"`
-	UserID      string       `json:"user_id,omitempty" bson:"user_id,omitempty"`
-	Description string       `json:"description" bson:"description"`
-	CreatedAt   time.Time    `json:"created_at" bson:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at" bson:"updated_at"`
+	ID          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Key         string             `json:"key" bson:"key"`
+	Value       interface{}        `json:"value" bson:"value"`
+	Type        SettingType        `json:"type" bson:"type"`
+	Scope       SettingScope       `json:"scope" bson:"scope"`
+	UserID      primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	Description string             `json:"description" bson:"description"`
+	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
 // NewSetting creates a new setting with a unique ID
-func NewSetting(key string, value interface{}, settingType SettingType, scope SettingScope, description string, userID string) *Setting {
+func NewSetting(key string, value interface{}, settingType SettingType, scope SettingScope, description string, userID primitive.ObjectID) *Setting {
 	now := time.Now()
 	return &Setting{
-		ID:          uuid.New().String(),
 		Key:         key,
 		Value:       value,
 		Type:        settingType,
@@ -61,11 +60,11 @@ func NewSetting(key string, value interface{}, settingType SettingType, scope Se
 
 // NewSystemSetting creates a new system-wide setting
 func NewSystemSetting(key string, value interface{}, settingType SettingType, description string) *Setting {
-	return NewSetting(key, value, settingType, SettingScopeSystem, description, "")
+	return NewSetting(key, value, settingType, SettingScopeSystem, description, primitive.NilObjectID)
 }
 
 // NewUserSetting creates a new user-specific setting
-func NewUserSetting(key string, value interface{}, settingType SettingType, description string, userID string) *Setting {
+func NewUserSetting(key string, value interface{}, settingType SettingType, description string, userID primitive.ObjectID) *Setting {
 	return NewSetting(key, value, settingType, SettingScopeUser, description, userID)
 }
 

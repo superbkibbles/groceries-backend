@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // OrderService implements the order service interface
@@ -28,8 +29,14 @@ func (s *OrderService) CreateOrder(ctx context.Context, customerID string, shipp
 		return nil, errors.New("customer ID is required")
 	}
 
-	order := entities.NewOrder(customerID, shippingInfo)
-	err := s.orderRepo.Create(ctx, order)
+	// Convert customerID to ObjectID
+	customerObjectID, err := primitive.ObjectIDFromHex(customerID)
+	if err != nil {
+		return nil, errors.New("invalid customer ID")
+	}
+
+	order := entities.NewOrder(customerObjectID, shippingInfo)
+	err = s.orderRepo.Create(ctx, order)
 	if err != nil {
 		return nil, err
 	}
@@ -39,36 +46,45 @@ func (s *OrderService) CreateOrder(ctx context.Context, customerID string, shipp
 
 // GetOrder retrieves an order by ID
 func (s *OrderService) GetOrder(ctx context.Context, id string) (*entities.Order, error) {
-	return s.orderRepo.GetByID(ctx, id)
+	orderID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid order ID")
+	}
+	return s.orderRepo.GetByID(ctx, orderID)
 }
 
-// AddItem adds a product variation to an order
-func (s *OrderService) AddItem(ctx context.Context, orderID, productID, variationID string, quantity int) error {
+// AddItem adds a product to an order
+func (s *OrderService) AddItem(ctx context.Context, orderID, productID string, quantity int) error {
+	// Convert IDs to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
+	productObjectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return errors.New("invalid product ID")
+	}
+
 	// Get the order
-	order, err := s.orderRepo.GetByID(ctx, orderID)
+	order, err := s.orderRepo.GetByID(ctx, orderObjectID)
 	if err != nil {
 		return err
 	}
 
 	// Get the product
-	product, err := s.productRepo.GetByID(ctx, productID)
-	if err != nil {
-		return err
-	}
-
-	// Find the variation
-	variation, err := product.GetVariation(variationID)
+	product, err := s.productRepo.GetByID(ctx, productObjectID)
 	if err != nil {
 		return err
 	}
 
 	// Check stock availability
-	if variation.StockQuantity < quantity {
+	if product.StockQuantity < quantity {
 		return errors.New("insufficient stock")
 	}
 
 	// Add item to order
-	err = order.AddItem(productID, variationID, variation.SKU, product.Name, variation.Price, quantity)
+	err = order.AddItem(productObjectID, product.SKU, product.Name, product.Price, quantity)
 	if err != nil {
 		return err
 	}
@@ -80,14 +96,25 @@ func (s *OrderService) AddItem(ctx context.Context, orderID, productID, variatio
 	}
 
 	// Update product stock
-	variation.StockQuantity -= quantity
-	return s.productRepo.UpdateStock(ctx, variationID, variation.StockQuantity)
+	product.StockQuantity -= quantity
+	return s.productRepo.Update(ctx, product)
 }
 
 // UpdateItemQuantity updates the quantity of an item in an order
-func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productID, variationID string, quantity int) error {
+func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productID string, quantity int) error {
+	// Convert IDs to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
+	productObjectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return errors.New("invalid product ID")
+	}
+
 	// Get the order
-	order, err := s.orderRepo.GetByID(ctx, orderID)
+	order, err := s.orderRepo.GetByID(ctx, orderObjectID)
 	if err != nil {
 		return err
 	}
@@ -95,7 +122,7 @@ func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productI
 	// Find the current quantity of the item in the order
 	currentQuantity := 0
 	for _, item := range order.Items {
-		if item.ProductID == productID && item.VariationID == variationID {
+		if item.ProductID == productObjectID {
 			currentQuantity = item.Quantity
 			break
 		}
@@ -103,7 +130,7 @@ func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productI
 
 	// If removing the item
 	if quantity <= 0 {
-		err = order.RemoveItem(productID, variationID)
+		err = order.RemoveItem(productObjectID)
 		if err != nil {
 			return err
 		}
@@ -115,65 +142,50 @@ func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productI
 		}
 
 		// Update product stock
-		product, err := s.productRepo.GetByID(ctx, productID)
+		product, err := s.productRepo.GetByID(ctx, productObjectID)
 		if err != nil {
 			return err
 		}
 
-		variation, err := product.GetVariation(variationID)
-		if err != nil {
-			return err
-		}
-
-		variation.StockQuantity += currentQuantity
-		return s.productRepo.UpdateStock(ctx, variationID, variation.StockQuantity)
+		product.StockQuantity += currentQuantity
+		return s.productRepo.Update(ctx, product)
 	}
 
 	// If increasing quantity, check stock availability
 	if quantity > currentQuantity {
-		product, err := s.productRepo.GetByID(ctx, productID)
-		if err != nil {
-			return err
-		}
-
-		variation, err := product.GetVariation(variationID)
+		product, err := s.productRepo.GetByID(ctx, productObjectID)
 		if err != nil {
 			return err
 		}
 
 		additionalQuantity := quantity - currentQuantity
-		if variation.StockQuantity < additionalQuantity {
+		if product.StockQuantity < additionalQuantity {
 			return errors.New("insufficient stock")
 		}
 
 		// Update product stock
-		variation.StockQuantity -= additionalQuantity
-		err = s.productRepo.UpdateStock(ctx, variationID, variation.StockQuantity)
+		product.StockQuantity -= additionalQuantity
+		err = s.productRepo.Update(ctx, product)
 		if err != nil {
 			return err
 		}
 	} else if quantity < currentQuantity {
 		// If decreasing quantity, return stock
-		product, err := s.productRepo.GetByID(ctx, productID)
-		if err != nil {
-			return err
-		}
-
-		variation, err := product.GetVariation(variationID)
+		product, err := s.productRepo.GetByID(ctx, productObjectID)
 		if err != nil {
 			return err
 		}
 
 		returnedQuantity := currentQuantity - quantity
-		variation.StockQuantity += returnedQuantity
-		err = s.productRepo.UpdateStock(ctx, variationID, variation.StockQuantity)
+		product.StockQuantity += returnedQuantity
+		err = s.productRepo.Update(ctx, product)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Update item quantity in order
-	err = order.UpdateItemQuantity(productID, variationID, quantity)
+	err = order.UpdateItemQuantity(productObjectID, quantity)
 	if err != nil {
 		return err
 	}
@@ -183,14 +195,20 @@ func (s *OrderService) UpdateItemQuantity(ctx context.Context, orderID, productI
 }
 
 // RemoveItem removes an item from an order
-func (s *OrderService) RemoveItem(ctx context.Context, orderID, productID, variationID string) error {
-	return s.UpdateItemQuantity(ctx, orderID, productID, variationID, 0)
+func (s *OrderService) RemoveItem(ctx context.Context, orderID, productID string) error {
+	return s.UpdateItemQuantity(ctx, orderID, productID, 0)
 }
 
 // UpdateOrderStatus updates the status of an order
 func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID string, status entities.OrderStatus) error {
+	// Convert orderID to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
 	// Get the order
-	order, err := s.orderRepo.GetByID(ctx, orderID)
+	order, err := s.orderRepo.GetByID(ctx, orderObjectID)
 	if err != nil {
 		return err
 	}
@@ -207,8 +225,14 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID string, st
 
 // SetPaymentInfo sets the payment information for an order
 func (s *OrderService) SetPaymentInfo(ctx context.Context, orderID, method, transactionID string, amount float64) error {
+	// Convert orderID to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
 	// Get the order
-	order, err := s.orderRepo.GetByID(ctx, orderID)
+	order, err := s.orderRepo.GetByID(ctx, orderObjectID)
 	if err != nil {
 		return err
 	}
@@ -225,8 +249,14 @@ func (s *OrderService) SetPaymentInfo(ctx context.Context, orderID, method, tran
 
 // SetTrackingInfo sets the shipping tracking information for an order
 func (s *OrderService) SetTrackingInfo(ctx context.Context, orderID, carrier, trackingNum string) error {
+	// Convert orderID to ObjectID
+	orderObjectID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
 	// Get the order
-	order, err := s.orderRepo.GetByID(ctx, orderID)
+	order, err := s.orderRepo.GetByID(ctx, orderObjectID)
 	if err != nil {
 		return err
 	}
@@ -248,5 +278,9 @@ func (s *OrderService) ListOrders(ctx context.Context, filter map[string]interfa
 
 // GetCustomerOrders retrieves orders for a specific customer
 func (s *OrderService) GetCustomerOrders(ctx context.Context, customerID string, page, limit int) ([]*entities.Order, int, error) {
-	return s.orderRepo.GetByCustomerID(ctx, customerID, page, limit)
+	customerObjectID, err := primitive.ObjectIDFromHex(customerID)
+	if err != nil {
+		return nil, 0, errors.New("invalid customer ID")
+	}
+	return s.orderRepo.GetByCustomerID(ctx, customerObjectID, page, limit)
 }

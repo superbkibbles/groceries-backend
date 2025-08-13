@@ -4,29 +4,27 @@ import (
 	"context"
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ProductService defines the interface for product business logic
 type ProductService interface {
-	CreateProduct(ctx context.Context, name, description string, basePrice float64, categories []string) (*entities.Product, error)
+	CreateProduct(ctx context.Context, name, description string, categories []string, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string) (*entities.Product, error)
 	GetProduct(ctx context.Context, id string) (*entities.Product, error)
 	UpdateProduct(ctx context.Context, product *entities.Product) error
 	DeleteProduct(ctx context.Context, id string) error
 	ListProducts(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.Product, int, error)
 	GetProductsByCategory(ctx context.Context, category string, page, limit int) ([]*entities.Product, int, error)
-	AddVariation(ctx context.Context, productID string, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string) (*entities.Variation, error)
-	UpdateVariation(ctx context.Context, productID, variationID string, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string) error
-	RemoveVariation(ctx context.Context, productID, variationID string) error
-	UpdateStock(ctx context.Context, productID, variationID string, quantity int) error
+	UpdateStock(ctx context.Context, productID string, quantity int) error
 }
 
 // OrderService defines the interface for order business logic
 type OrderService interface {
 	CreateOrder(ctx context.Context, customerID string, shippingInfo entities.ShippingInfo) (*entities.Order, error)
 	GetOrder(ctx context.Context, id string) (*entities.Order, error)
-	AddItem(ctx context.Context, orderID, productID, variationID string, quantity int) error
-	UpdateItemQuantity(ctx context.Context, orderID, productID, variationID string, quantity int) error
-	RemoveItem(ctx context.Context, orderID, productID, variationID string) error
+	AddItem(ctx context.Context, orderID, productID string, quantity int) error
+	UpdateItemQuantity(ctx context.Context, orderID, productID string, quantity int) error
+	RemoveItem(ctx context.Context, orderID, productID string) error
 	UpdateOrderStatus(ctx context.Context, orderID string, status entities.OrderStatus) error
 	SetPaymentInfo(ctx context.Context, orderID, method, transactionID string, amount float64) error
 	SetTrackingInfo(ctx context.Context, orderID, carrier, trackingNum string) error
@@ -45,9 +43,9 @@ type UserService interface {
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string) error
 	AddAddress(ctx context.Context, userID, name, addressLine1, addressLine2, city, state, country, postalCode, phone string, isDefault bool) (*entities.Address, error)
 	UpdateAddress(ctx context.Context, address *entities.Address) error
-	DeleteAddress(ctx context.Context, addressID string) error
+	DeleteAddress(ctx context.Context, addressID primitive.ObjectID) error
 	GetAddresses(ctx context.Context, userID string) ([]*entities.Address, error)
-	SetDefaultAddress(ctx context.Context, userID, addressID string) error
+	SetDefaultAddress(ctx context.Context, userID string, addressID primitive.ObjectID) error
 	ListUsers(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.User, int, error)
 }
 

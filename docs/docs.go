@@ -4182,68 +4182,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{id}/variations": {
-            "post": {
-                "description": "Add a new variation to an existing product",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "products"
-                ],
-                "summary": "Add a variation to a product",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Variation details",
-                        "name": "variation",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/rest.VariationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/entities.Variation"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/products/{id}/variations/{variationId}": {
+        "/products/{id}/stock": {
             "put": {
-                "description": "Update an existing variation of a product",
+                "description": "Update the stock quantity of a product",
                 "consumes": [
                     "application/json"
                 ],
@@ -4253,128 +4194,12 @@ const docTemplate = `{
                 "tags": [
                     "products"
                 ],
-                "summary": "Update a product variation",
+                "summary": "Update product stock",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Product ID",
                         "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Variation ID",
-                        "name": "variationId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated variation details",
-                        "name": "variation",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/rest.VariationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Variation updated successfully",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Remove a variation from a product",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "products"
-                ],
-                "summary": "Remove a product variation",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Variation ID",
-                        "name": "variationId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/products/{id}/variations/{variationId}/stock": {
-            "put": {
-                "description": "Update the stock quantity of a product variation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "products"
-                ],
-                "summary": "Update variation stock",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Product ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Variation ID",
-                        "name": "variationId",
                         "in": "path",
                         "required": true
                     },
@@ -5249,9 +5074,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
-                },
-                "variation_id": {
-                    "type": "string"
                 }
             }
         },
@@ -5479,9 +5301,6 @@ const docTemplate = `{
                 },
                 "subtotal": {
                     "type": "number"
-                },
-                "variation_id": {
-                    "type": "string"
                 }
             }
         },
@@ -5601,8 +5420,9 @@ const docTemplate = `{
         "entities.Product": {
             "type": "object",
             "properties": {
-                "base_price": {
-                    "type": "number"
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "categories": {
                     "description": "Category IDs the product belongs to",
@@ -5620,17 +5440,26 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
-                "updated_at": {
+                "price": {
+                    "type": "number"
+                },
+                "sku": {
                     "type": "string"
                 },
-                "variations": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entities.Variation"
-                    }
+                "stock_quantity": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -5802,33 +5631,6 @@ const docTemplate = `{
                 "UserRoleAdmin"
             ]
         },
-        "entities.Variation": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "id": {
-                    "type": "string"
-                },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "price": {
-                    "type": "number"
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "stock_quantity": {
-                    "type": "integer"
-                }
-            }
-        },
         "entities.Wishlist": {
             "type": "object",
             "properties": {
@@ -5862,9 +5664,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "product_id": {
-                    "type": "string"
-                },
-                "variation_id": {
                     "type": "string"
                 }
             }
@@ -6136,12 +5935,15 @@ const docTemplate = `{
         "rest.CreateProductRequest": {
             "type": "object",
             "required": [
-                "base_price",
-                "name"
+                "name",
+                "price",
+                "sku",
+                "stock_quantity"
             ],
             "properties": {
-                "base_price": {
-                    "type": "number"
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "categories": {
                     "type": "array",
@@ -6152,8 +5954,24 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "stock_quantity": {
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -6255,8 +6073,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "product_id",
-                "quantity",
-                "variation_id"
+                "quantity"
             ],
             "properties": {
                 "product_id": {
@@ -6264,9 +6081,6 @@ const docTemplate = `{
                 },
                 "quantity": {
                     "type": "integer"
-                },
-                "variation_id": {
-                    "type": "string"
                 }
             }
         },
@@ -6372,14 +6186,10 @@ const docTemplate = `{
         "rest.RemoveItemRequest": {
             "type": "object",
             "required": [
-                "product_id",
-                "variation_id"
+                "product_id"
             ],
             "properties": {
                 "product_id": {
-                    "type": "string"
-                },
-                "variation_id": {
                     "type": "string"
                 }
             }
@@ -6495,12 +6305,15 @@ const docTemplate = `{
         "rest.UpdateProductRequest": {
             "type": "object",
             "required": [
-                "base_price",
-                "name"
+                "name",
+                "price",
+                "sku",
+                "stock_quantity"
             ],
             "properties": {
-                "base_price": {
-                    "type": "number"
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "categories": {
                     "type": "array",
@@ -6511,8 +6324,24 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "stock_quantity": {
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -6551,37 +6380,6 @@ const docTemplate = `{
                 },
                 "last_name": {
                     "type": "string"
-                }
-            }
-        },
-        "rest.VariationRequest": {
-            "type": "object",
-            "required": [
-                "attributes",
-                "price",
-                "sku",
-                "stock_quantity"
-            ],
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "price": {
-                    "type": "number"
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "stock_quantity": {
-                    "type": "integer",
-                    "minimum": 0
                 }
             }
         }

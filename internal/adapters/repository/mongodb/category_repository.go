@@ -6,6 +6,7 @@ import (
 
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -32,7 +33,7 @@ func NewCategoryRepository(db *mongo.Database, productRepo *ProductRepository) *
 // Create adds a new category to the database
 func (r *CategoryRepository) Create(ctx context.Context, category *entities.Category) error {
 	// If this is a subcategory, update its path and level based on parent
-	if category.ParentID != "" {
+	if !category.ParentID.IsZero() {
 		parent, err := r.GetByID(ctx, category.ParentID)
 		if err != nil {
 			return err
@@ -42,7 +43,7 @@ func (r *CategoryRepository) Create(ctx context.Context, category *entities.Cate
 		category.Level = parent.Level + 1
 
 		// Set the path to include all ancestors
-		category.Path = append(append([]string{}, parent.Path...), parent.ID)
+		category.Path = append(append([]primitive.ObjectID{}, parent.Path...), parent.ID)
 	}
 
 	_, err := r.collection.InsertOne(ctx, category)
@@ -50,7 +51,7 @@ func (r *CategoryRepository) Create(ctx context.Context, category *entities.Cate
 }
 
 // GetByID retrieves a category by its ID
-func (r *CategoryRepository) GetByID(ctx context.Context, id string) (*entities.Category, error) {
+func (r *CategoryRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Category, error) {
 	var category entities.Category
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&category)
 	if err != nil {
@@ -82,7 +83,7 @@ func (r *CategoryRepository) Update(ctx context.Context, category *entities.Cate
 }
 
 // Delete removes a category from the database
-func (r *CategoryRepository) Delete(ctx context.Context, id string) error {
+func (r *CategoryRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	// First check if this category has children
 	count, err := r.collection.CountDocuments(ctx, bson.M{"parent_id": id})
 	if err != nil {
@@ -164,7 +165,7 @@ func (r *CategoryRepository) GetRootCategories(ctx context.Context) ([]*entities
 }
 
 // GetChildCategories retrieves all direct child categories of a parent
-func (r *CategoryRepository) GetChildCategories(ctx context.Context, parentID string) ([]*entities.Category, error) {
+func (r *CategoryRepository) GetChildCategories(ctx context.Context, parentID primitive.ObjectID) ([]*entities.Category, error) {
 	filter := bson.M{"parent_id": parentID}
 	opts := options.Find().SetSort(bson.M{"name": 1})
 
@@ -183,7 +184,7 @@ func (r *CategoryRepository) GetChildCategories(ctx context.Context, parentID st
 }
 
 // GetCategoryTree builds a complete category tree starting from a root category
-func (r *CategoryRepository) GetCategoryTree(ctx context.Context, rootID string) (*entities.Category, error) {
+func (r *CategoryRepository) GetCategoryTree(ctx context.Context, rootID primitive.ObjectID) (*entities.Category, error) {
 	// Get the root category
 	root, err := r.GetByID(ctx, rootID)
 	if err != nil {
@@ -229,7 +230,7 @@ func (r *CategoryRepository) buildCategoryTree(ctx context.Context, category *en
 }
 
 // GetProductsByCategory retrieves products in a category and optionally its subcategories
-func (r *CategoryRepository) GetProductsByCategory(ctx context.Context, categoryID string, includeSubcategories bool, page, limit int) ([]*entities.Product, int, error) {
+func (r *CategoryRepository) GetProductsByCategory(ctx context.Context, categoryID primitive.ObjectID, includeSubcategories bool, page, limit int) ([]*entities.Product, int, error) {
 	// If we don't need to include subcategories, just use the product repo directly
 	if !includeSubcategories {
 		return r.productRepo.GetByCategory(ctx, categoryID, page, limit)
@@ -242,7 +243,7 @@ func (r *CategoryRepository) GetProductsByCategory(ctx context.Context, category
 	}
 
 	// Get all category IDs to include in the search
-	categoryIDs := []string{categoryID}
+	categoryIDs := []primitive.ObjectID{categoryID}
 
 	// If we need to include subcategories, build the full tree and collect all IDs
 	if includeSubcategories {
@@ -264,8 +265,8 @@ func (r *CategoryRepository) GetProductsByCategory(ctx context.Context, category
 }
 
 // collectCategoryIDs is a helper function to collect all category IDs in a tree
-func (r *CategoryRepository) collectCategoryIDs(category *entities.Category) []string {
-	ids := []string{category.ID}
+func (r *CategoryRepository) collectCategoryIDs(category *entities.Category) []primitive.ObjectID {
+	ids := []primitive.ObjectID{category.ID}
 
 	for _, child := range category.Children {
 		childIDs := r.collectCategoryIDs(&child)

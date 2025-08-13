@@ -47,15 +47,13 @@ type CreateOrderRequest struct {
 
 // OrderItemRequest represents the request body for adding/updating an item
 type OrderItemRequest struct {
-	ProductID   string `json:"product_id" binding:"required"`
-	VariationID string `json:"variation_id" binding:"required"`
-	Quantity    int    `json:"quantity" binding:"required,gt=0"`
+	ProductID string `json:"product_id" binding:"required"`
+	Quantity  int    `json:"quantity" binding:"required,gt=0"`
 }
 
 // RemoveItemRequest represents the request body for removing an item
 type RemoveItemRequest struct {
-	ProductID   string `json:"product_id" binding:"required"`
-	VariationID string `json:"variation_id" binding:"required"`
+	ProductID string `json:"product_id" binding:"required"`
 }
 
 // UpdateStatusRequest represents the request body for updating order status
@@ -214,13 +212,12 @@ func (h *OrderHandler) AddItem(c *gin.Context) {
 		c.Request.Context(),
 		orderID,
 		req.ProductID,
-		req.VariationID,
 		req.Quantity,
 	)
 
 	if err != nil {
 		statusCode := http.StatusInternalServerError
-		if err.Error() == "order not found" || err.Error() == "product not found" || err.Error() == "variation not found" {
+		if err.Error() == "order not found" || err.Error() == "product not found" {
 			statusCode = http.StatusNotFound
 		} else if err.Error() == "insufficient stock" || err.Error() == "cannot modify a non-pending order" {
 			statusCode = http.StatusBadRequest
@@ -258,7 +255,6 @@ func (h *OrderHandler) UpdateItemQuantity(c *gin.Context) {
 		c.Request.Context(),
 		orderID,
 		req.ProductID,
-		req.VariationID,
 		req.Quantity,
 	)
 
@@ -302,7 +298,6 @@ func (h *OrderHandler) RemoveItem(c *gin.Context) {
 		c.Request.Context(),
 		orderID,
 		req.ProductID,
-		req.VariationID,
 	)
 
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -46,7 +47,7 @@ func (r *UserRepository) Create(ctx context.Context, user *entities.User) error 
 }
 
 // GetByID retrieves a user by ID
-func (r *UserRepository) GetByID(ctx context.Context, id string) (*entities.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.User, error) {
 	var user entities.User
 	err := r.userCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
 	if err != nil {
@@ -78,7 +79,7 @@ func (r *UserRepository) Update(ctx context.Context, user *entities.User) error 
 }
 
 // Delete removes a user from the database
-func (r *UserRepository) Delete(ctx context.Context, id string) error {
+func (r *UserRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	// Delete user
 	_, err := r.userCollection.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
@@ -166,7 +167,7 @@ func (r *UserRepository) UpdateAddress(ctx context.Context, address *entities.Ad
 }
 
 // DeleteAddress removes an address
-func (r *UserRepository) DeleteAddress(ctx context.Context, id string) error {
+func (r *UserRepository) DeleteAddress(ctx context.Context, id primitive.ObjectID) error {
 	// Check if this is a default address
 	var address entities.Address
 	err := r.addrCollection.FindOne(ctx, bson.M{"id": id}).Decode(&address)
@@ -183,7 +184,7 @@ func (r *UserRepository) DeleteAddress(ctx context.Context, id string) error {
 }
 
 // GetAddressesByUserID retrieves all addresses for a user
-func (r *UserRepository) GetAddressesByUserID(ctx context.Context, userID string) ([]*entities.Address, error) {
+func (r *UserRepository) GetAddressesByUserID(ctx context.Context, userID primitive.ObjectID) ([]*entities.Address, error) {
 	cursor, err := r.addrCollection.Find(ctx, bson.M{"user_id": userID})
 	if err != nil {
 		return nil, err

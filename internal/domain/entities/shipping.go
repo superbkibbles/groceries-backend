@@ -3,12 +3,12 @@ package entities
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ShippingMethod represents a shipping method available in the system
 type ShippingMethod struct {
-	ID                    string    `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	Name                  string    `json:"name" bson:"name"`
 	Description           string    `json:"description" bson:"description"`
 	BasePrice             float64   `json:"base_price" bson:"base_price"`
@@ -20,7 +20,7 @@ type ShippingMethod struct {
 
 // ShippingZone represents a geographical zone with specific shipping rates
 type ShippingZone struct {
-	ID        string    `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	Name      string    `json:"name" bson:"name"`
 	Countries []string  `json:"countries" bson:"countries"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
@@ -29,7 +29,7 @@ type ShippingZone struct {
 
 // ShippingRate represents the cost of a shipping method for a specific zone
 type ShippingRate struct {
-	ID               string    `json:"id" bson:"_id"`
+	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	ShippingZoneID   string    `json:"shipping_zone_id" bson:"shipping_zone_id"`
 	ShippingMethodID string    `json:"shipping_method_id" bson:"shipping_method_id"`
 	Price            float64   `json:"price" bson:"price"`
@@ -41,7 +41,6 @@ type ShippingRate struct {
 func NewShippingMethod(name, description string, basePrice float64, estimatedDeliveryDays int) *ShippingMethod {
 	now := time.Now()
 	return &ShippingMethod{
-		ID:                    uuid.New().String(),
 		Name:                  name,
 		Description:           description,
 		BasePrice:             basePrice,
@@ -56,7 +55,6 @@ func NewShippingMethod(name, description string, basePrice float64, estimatedDel
 func NewShippingZone(name string, countries []string) *ShippingZone {
 	now := time.Now()
 	return &ShippingZone{
-		ID:        uuid.New().String(),
 		Name:      name,
 		Countries: countries,
 		CreatedAt: now,
@@ -68,7 +66,6 @@ func NewShippingZone(name string, countries []string) *ShippingZone {
 func NewShippingRate(shippingZoneID, shippingMethodID string, price float64) *ShippingRate {
 	now := time.Now()
 	return &ShippingRate{
-		ID:               uuid.New().String(),
 		ShippingZoneID:   shippingZoneID,
 		ShippingMethodID: shippingMethodID,
 		Price:            price,

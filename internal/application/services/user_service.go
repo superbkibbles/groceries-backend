@@ -11,6 +11,7 @@ import (
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
 	"github.com/superbkibbles/ecommerce/internal/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // JWT secret key - in production, this should be loaded from environment variables
@@ -174,7 +175,11 @@ func (s *UserService) LoginAdmin(ctx context.Context, email, password string) (*
 
 // GetUser retrieves a user by ID
 func (s *UserService) GetUser(ctx context.Context, id string) (*entities.User, error) {
-	return s.userRepo.GetByID(ctx, id)
+	userID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	return s.userRepo.GetByID(ctx, userID)
 }
 
 // UpdateUser updates user information
@@ -190,8 +195,14 @@ func (s *UserService) UpdateUser(ctx context.Context, user *entities.User) error
 
 // ChangePassword changes a user's password
 func (s *UserService) ChangePassword(ctx context.Context, userID, currentPassword, newPassword string) error {
+	// Convert userID to ObjectID
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+
 	// Get user
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByID(ctx, userObjectID)
 	if err != nil {
 		return err
 	}
@@ -208,14 +219,20 @@ func (s *UserService) ChangePassword(ctx context.Context, userID, currentPasswor
 
 // AddAddress adds a new address for a user
 func (s *UserService) AddAddress(ctx context.Context, userID, name, addressLine1, addressLine2, city, state, country, postalCode, phone string, isDefault bool) (*entities.Address, error) {
+	// Convert userID to ObjectID
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+
 	// Verify user exists
-	_, err := s.userRepo.GetByID(ctx, userID)
+	_, err = s.userRepo.GetByID(ctx, userObjectID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create new address
-	address := entities.NewAddress(userID, name, addressLine1, addressLine2, city, state, country, postalCode, phone, isDefault)
+	address := entities.NewAddress(userObjectID, name, addressLine1, addressLine2, city, state, country, postalCode, phone, isDefault)
 
 	// Save address to database
 	err = s.userRepo.AddAddress(ctx, address)
@@ -250,19 +267,29 @@ func (s *UserService) UpdateAddress(ctx context.Context, address *entities.Addre
 }
 
 // DeleteAddress removes an address
-func (s *UserService) DeleteAddress(ctx context.Context, addressID string) error {
+func (s *UserService) DeleteAddress(ctx context.Context, addressID primitive.ObjectID) error {
 	return s.userRepo.DeleteAddress(ctx, addressID)
 }
 
 // GetAddresses retrieves all addresses for a user
 func (s *UserService) GetAddresses(ctx context.Context, userID string) ([]*entities.Address, error) {
-	return s.userRepo.GetAddressesByUserID(ctx, userID)
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	return s.userRepo.GetAddressesByUserID(ctx, userObjectID)
 }
 
 // SetDefaultAddress sets an address as the default for a user
-func (s *UserService) SetDefaultAddress(ctx context.Context, userID, addressID string) error {
+func (s *UserService) SetDefaultAddress(ctx context.Context, userID string, addressID primitive.ObjectID) error {
+	// Convert userID to ObjectID
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+
 	// Get all addresses for the user
-	addresses, err := s.userRepo.GetAddressesByUserID(ctx, userID)
+	addresses, err := s.userRepo.GetAddressesByUserID(ctx, userObjectID)
 	if err != nil {
 		return err
 	}
