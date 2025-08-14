@@ -94,7 +94,7 @@ run-seed: build-seed
 .PHONY: dev
 dev:
 	@echo "Running in development mode..."
-	@which air > /dev/null || (echo "Installing air for live reload..." && go install github.com/cosmtrek/air@latest)
+	@which air > /dev/null || (echo "Installing air for live reload..." && go install github.com/air-verse/air@latest)
 	air
 
 # Test targets
