@@ -118,20 +118,21 @@ func (r *CategoryRepository) List(ctx context.Context, filter map[string]interfa
 	skip := (page - 1) * limit
 
 	// Convert map to bson.M
-	bsonFilter := bson.M{}
-	for k, v := range filter {
-		bsonFilter[k] = v
-	}
+	// bsonFilter := bson.M{}
+	// for k, v := range filter {
+	// 	bsonFilter[k] = v
+	// }
 
 	// Get total count
-	total, err := r.collection.CountDocuments(ctx, bsonFilter)
+	total, err := r.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Find categories with pagination
-	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit)).SetSort(bson.M{"level": 1, "name": 1})
-	cursor, err := r.collection.Find(ctx, bsonFilter, opts)
+	// opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit)).SetSort(bson.M{"level": 1, "name": 1})
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
 	if err != nil {
 		return nil, 0, err
 	}

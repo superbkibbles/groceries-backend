@@ -34,26 +34,26 @@ func NewProductHandler(router *gin.RouterGroup, productService ports.ProductServ
 
 // CreateProductRequest represents the request body for creating a product
 type CreateProductRequest struct {
-	Name          string                 `json:"name" binding:"required"`
-	Description   string                 `json:"description"`
-	Categories    []string               `json:"categories"`
-	Attributes    map[string]interface{} `json:"attributes"`
-	SKU           string                 `json:"sku" binding:"required"`
-	Price         float64                `json:"price" binding:"required,gt=0"`
-	StockQuantity int                    `json:"stock_quantity" binding:"required,gte=0"`
-	Images        []string               `json:"images"`
+	Name          string         `json:"name" binding:"required"`
+	Description   string         `json:"description"`
+	Categories    []string       `json:"categories"`
+	Attributes    map[string]any `json:"attributes"`
+	SKU           string         `json:"sku" binding:"required"`
+	Price         float64        `json:"price" binding:"required,gt=0"`
+	StockQuantity int            `json:"stock_quantity" binding:"required,gte=0"`
+	Images        []string       `json:"images"`
 }
 
 // UpdateProductRequest represents the request body for updating a product
 type UpdateProductRequest struct {
-	Name          string                 `json:"name" binding:"required"`
-	Description   string                 `json:"description"`
-	Categories    []string               `json:"categories"`
-	Attributes    map[string]interface{} `json:"attributes"`
-	SKU           string                 `json:"sku" binding:"required"`
-	Price         float64                `json:"price" binding:"required,gt=0"`
-	StockQuantity int                    `json:"stock_quantity" binding:"required,gte=0"`
-	Images        []string               `json:"images"`
+	Name          string         `json:"name" binding:"required"`
+	Description   string         `json:"description"`
+	Categories    []string       `json:"categories"`
+	Attributes    map[string]any `json:"attributes"`
+	SKU           string         `json:"sku" binding:"required"`
+	Price         float64        `json:"price" binding:"required,gt=0"`
+	StockQuantity int            `json:"stock_quantity" binding:"required,gte=0"`
+	Images        []string       `json:"images"`
 }
 
 // StockUpdateRequest represents the request body for updating stock

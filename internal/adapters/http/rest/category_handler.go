@@ -199,7 +199,7 @@ func (h *CategoryHandler) ListCategories(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
 	// Create empty filter for now (can be extended later)
-	filter := map[string]interface{}{}
+	filter := map[string]any{}
 
 	categories, total, err := h.categoryService.ListCategories(c.Request.Context(), filter, page, limit)
 	if err != nil {
