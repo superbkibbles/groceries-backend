@@ -276,3 +276,43 @@ func (r *CategoryRepository) collectCategoryIDs(category *entities.Category) []p
 
 	return ids
 }
+
+// AddTranslation adds a translation for a specific language
+func (r *CategoryRepository) AddTranslation(ctx context.Context, categoryID primitive.ObjectID, language string, translation entities.Translation) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": bson.M{"translations." + language: translation}},
+	)
+	return err
+}
+
+// UpdateTranslation updates a translation for a specific language
+func (r *CategoryRepository) UpdateTranslation(ctx context.Context, categoryID primitive.ObjectID, language string, translation entities.Translation) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": bson.M{"translations." + language: translation}},
+	)
+	return err
+}
+
+// DeleteTranslation deletes a translation for a specific language
+func (r *CategoryRepository) DeleteTranslation(ctx context.Context, categoryID primitive.ObjectID, language string) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$unset": bson.M{"translations." + language: ""}},
+	)
+	return err
+}
+
+// GetTranslations retrieves all translations for a category
+func (r *CategoryRepository) GetTranslations(ctx context.Context, categoryID primitive.ObjectID) (map[string]entities.Translation, error) {
+	var category entities.Category
+	err := r.collection.FindOne(ctx, bson.M{"_id": categoryID}).Decode(&category)
+	if err != nil {
+		return nil, err
+	}
+	return category.Translations, nil
+}

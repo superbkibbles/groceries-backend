@@ -32,15 +32,15 @@ const (
 
 // Setting represents a configuration setting in the e-commerce system
 type Setting struct {
-	ID          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Key         string             `json:"key" bson:"key"`
-	Value       interface{}        `json:"value" bson:"value"`
-	Type        SettingType        `json:"type" bson:"type"`
-	Scope       SettingScope       `json:"scope" bson:"scope"`
-	UserID      primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
-	Description string             `json:"description" bson:"description"`
-	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
+	ID          primitive.ObjectID `json:"id,omitempty"`
+	Key         string             `json:"key"`
+	Value       interface{}        `json:"value"`
+	Type        SettingType        `json:"type"`
+	Scope       SettingScope       `json:"scope"`
+	UserID      primitive.ObjectID `json:"user_id,omitempty"`
+	Description string             `json:"description"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
 // NewSetting creates a new setting with a unique ID

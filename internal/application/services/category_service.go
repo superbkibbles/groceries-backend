@@ -22,15 +22,24 @@ func NewCategoryService(categoryRepo ports.CategoryRepository) *CategoryService 
 	}
 }
 
-// CreateCategory creates a new category
-func (s *CategoryService) CreateCategory(ctx context.Context, name, description, slug string, parentID string) (*entities.Category, error) {
-	if name == "" {
-		return nil, errors.New("category name is required")
+// CreateCategory creates a new category with translations
+func (s *CategoryService) CreateCategory(ctx context.Context, slug string, parentID string, translations map[string]entities.Translation) (*entities.Category, error) {
+	if len(translations) == 0 {
+		return nil, errors.New("at least one translation is required")
+	}
+
+	// Validate that we have at least English translation
+	if _, hasEnglish := translations["en"]; !hasEnglish {
+		return nil, errors.New("English translation is required")
 	}
 
 	if slug == "" {
-		// Generate slug from name if not provided
-		slug = strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+		// Generate slug from English name if not provided
+		if enTranslation, exists := translations["en"]; exists {
+			slug = strings.ToLower(strings.ReplaceAll(enTranslation.Name, " ", "-"))
+		} else {
+			return nil, errors.New("slug is required when no English translation provided")
+		}
 	}
 
 	// Convert parentID to ObjectID
@@ -57,7 +66,7 @@ func (s *CategoryService) CreateCategory(ctx context.Context, name, description,
 		return nil, errors.New("category with this slug already exists")
 	}
 
-	category := entities.NewCategory(name, description, slug, parentObjectID)
+	category := entities.NewCategoryWithTranslations(slug, parentObjectID, translations)
 	err = s.categoryRepo.Create(ctx, category)
 	if err != nil {
 		return nil, err
@@ -66,18 +75,33 @@ func (s *CategoryService) CreateCategory(ctx context.Context, name, description,
 	return category, nil
 }
 
-// GetCategory retrieves a category by ID
-func (s *CategoryService) GetCategory(ctx context.Context, id string) (*entities.Category, error) {
+// GetCategory retrieves a category by ID and applies localization
+func (s *CategoryService) GetCategory(ctx context.Context, id string, language string) (*entities.Category, error) {
 	categoryID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.New("invalid category ID")
 	}
-	return s.categoryRepo.GetByID(ctx, categoryID)
+
+	category, err := s.categoryRepo.GetByID(ctx, categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply localization
+	category.ApplyLocalization(language)
+	return category, nil
 }
 
-// GetCategoryBySlug retrieves a category by slug
-func (s *CategoryService) GetCategoryBySlug(ctx context.Context, slug string) (*entities.Category, error) {
-	return s.categoryRepo.GetBySlug(ctx, slug)
+// GetCategoryBySlug retrieves a category by slug and applies localization
+func (s *CategoryService) GetCategoryBySlug(ctx context.Context, slug string, language string) (*entities.Category, error) {
+	category, err := s.categoryRepo.GetBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply localization
+	category.ApplyLocalization(language)
+	return category, nil
 }
 
 // UpdateCategory updates an existing category
@@ -116,18 +140,38 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id string) error {
 	return s.categoryRepo.Delete(ctx, categoryID)
 }
 
-// ListCategories retrieves categories with filtering and pagination
-func (s *CategoryService) ListCategories(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.Category, int, error) {
-	return s.categoryRepo.List(ctx, filter, page, limit)
+// ListCategories retrieves categories with filtering and pagination, applying localization
+func (s *CategoryService) ListCategories(ctx context.Context, filter map[string]interface{}, page, limit int, language string) ([]*entities.Category, int, error) {
+	categories, total, err := s.categoryRepo.List(ctx, filter, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Apply localization to each category
+	for _, category := range categories {
+		category.ApplyLocalization(language)
+	}
+
+	return categories, total, nil
 }
 
-// GetRootCategories retrieves all top-level categories
-func (s *CategoryService) GetRootCategories(ctx context.Context) ([]*entities.Category, error) {
-	return s.categoryRepo.GetRootCategories(ctx)
+// GetRootCategories retrieves all top-level categories, applying localization
+func (s *CategoryService) GetRootCategories(ctx context.Context, language string) ([]*entities.Category, error) {
+	categories, err := s.categoryRepo.GetRootCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply localization to each category
+	for _, category := range categories {
+		category.ApplyLocalization(language)
+	}
+
+	return categories, nil
 }
 
-// GetChildCategories retrieves all direct child categories of a parent
-func (s *CategoryService) GetChildCategories(ctx context.Context, parentID string) ([]*entities.Category, error) {
+// GetChildCategories retrieves all direct child categories of a parent, applying localization
+func (s *CategoryService) GetChildCategories(ctx context.Context, parentID string, language string) ([]*entities.Category, error) {
 	// Convert parentID to ObjectID
 	parentObjectID, err := primitive.ObjectIDFromHex(parentID)
 	if err != nil {
@@ -140,20 +184,53 @@ func (s *CategoryService) GetChildCategories(ctx context.Context, parentID strin
 		return nil, err
 	}
 
-	return s.categoryRepo.GetChildCategories(ctx, parentObjectID)
+	categories, err := s.categoryRepo.GetChildCategories(ctx, parentObjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply localization to each category
+	for _, category := range categories {
+		category.ApplyLocalization(language)
+	}
+
+	return categories, nil
 }
 
-// GetCategoryTree builds a complete category tree starting from a root category
-func (s *CategoryService) GetCategoryTree(ctx context.Context, rootID string) (*entities.Category, error) {
+// GetCategoryTree builds a complete category tree starting from a root category, applying localization
+func (s *CategoryService) GetCategoryTree(ctx context.Context, rootID string, language string) (*entities.Category, error) {
 	rootObjectID, err := primitive.ObjectIDFromHex(rootID)
 	if err != nil {
 		return nil, errors.New("invalid root ID")
 	}
-	return s.categoryRepo.GetCategoryTree(ctx, rootObjectID)
+
+	category, err := s.categoryRepo.GetCategoryTree(ctx, rootObjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply localization recursively to the tree
+	applyLocalizationToTree(category, language)
+	return category, nil
 }
 
-// GetProductsByCategory retrieves products in a category and optionally its subcategories
-func (s *CategoryService) GetProductsByCategory(ctx context.Context, categoryID string, includeSubcategories bool, page, limit int) ([]*entities.Product, int, error) {
+// applyLocalizationToTree recursively applies localization to a category tree
+func applyLocalizationToTree(category *entities.Category, language string) {
+	if category == nil {
+		return
+	}
+
+	// Apply localization to current category
+	category.ApplyLocalization(language)
+
+	// Apply localization to children
+	for i := range category.Children {
+		applyLocalizationToTree(&category.Children[i], language)
+	}
+}
+
+// GetProductsByCategory retrieves products in a category and optionally its subcategories, applying localization
+func (s *CategoryService) GetProductsByCategory(ctx context.Context, categoryID string, includeSubcategories bool, page, limit int, language string) ([]*entities.Product, int, error) {
 	// Convert categoryID to ObjectID
 	categoryObjectID, err := primitive.ObjectIDFromHex(categoryID)
 	if err != nil {
@@ -166,5 +243,79 @@ func (s *CategoryService) GetProductsByCategory(ctx context.Context, categoryID 
 		return nil, 0, err
 	}
 
-	return s.categoryRepo.GetProductsByCategory(ctx, categoryObjectID, includeSubcategories, page, limit)
+	products, total, err := s.categoryRepo.GetProductsByCategory(ctx, categoryObjectID, includeSubcategories, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Apply localization to each product
+	for _, product := range products {
+		product.ApplyLocalization(language)
+	}
+
+	return products, total, nil
+}
+
+// AddCategoryTranslation adds a translation for a specific language
+func (s *CategoryService) AddCategoryTranslation(ctx context.Context, categoryID string, language string, translation entities.Translation) error {
+	categoryObjectID, err := primitive.ObjectIDFromHex(categoryID)
+	if err != nil {
+		return errors.New("invalid category ID")
+	}
+
+	// Verify category exists
+	_, err = s.categoryRepo.GetByID(ctx, categoryObjectID)
+	if err != nil {
+		return err
+	}
+
+	return s.categoryRepo.AddTranslation(ctx, categoryObjectID, language, translation)
+}
+
+// UpdateCategoryTranslation updates a translation for a specific language
+func (s *CategoryService) UpdateCategoryTranslation(ctx context.Context, categoryID string, language string, translation entities.Translation) error {
+	categoryObjectID, err := primitive.ObjectIDFromHex(categoryID)
+	if err != nil {
+		return errors.New("invalid category ID")
+	}
+
+	// Verify category exists
+	_, err = s.categoryRepo.GetByID(ctx, categoryObjectID)
+	if err != nil {
+		return err
+	}
+
+	return s.categoryRepo.UpdateTranslation(ctx, categoryObjectID, language, translation)
+}
+
+// DeleteCategoryTranslation deletes a translation for a specific language
+func (s *CategoryService) DeleteCategoryTranslation(ctx context.Context, categoryID string, language string) error {
+	categoryObjectID, err := primitive.ObjectIDFromHex(categoryID)
+	if err != nil {
+		return errors.New("invalid category ID")
+	}
+
+	// Verify category exists
+	_, err = s.categoryRepo.GetByID(ctx, categoryObjectID)
+	if err != nil {
+		return err
+	}
+
+	return s.categoryRepo.DeleteTranslation(ctx, categoryObjectID, language)
+}
+
+// GetCategoryTranslations retrieves all translations for a category
+func (s *CategoryService) GetCategoryTranslations(ctx context.Context, categoryID string) (map[string]entities.Translation, error) {
+	categoryObjectID, err := primitive.ObjectIDFromHex(categoryID)
+	if err != nil {
+		return nil, errors.New("invalid category ID")
+	}
+
+	// Verify category exists
+	_, err = s.categoryRepo.GetByID(ctx, categoryObjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.categoryRepo.GetTranslations(ctx, categoryObjectID)
 }

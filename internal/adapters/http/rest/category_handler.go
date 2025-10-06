@@ -5,7 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"github.com/superbkibbles/ecommerce/internal/utils"
 )
 
 // CategoryHandler handles HTTP requests for categories
@@ -36,10 +38,9 @@ func NewCategoryHandler(router *gin.RouterGroup, categoryService ports.CategoryS
 
 // CreateCategoryRequest represents the request body for creating a category
 type CreateCategoryRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	Slug        string `json:"slug"`
-	ParentID    string `json:"parent_id,omitempty"`
+	Slug         string                          `json:"slug"`
+	ParentID     string                          `json:"parent_id,omitempty"`
+	Translations map[string]entities.Translation `json:"translations" binding:"required"`
 }
 
 // UpdateCategoryRequest represents the request body for updating a category
@@ -63,17 +64,23 @@ type UpdateCategoryRequest struct {
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	var req CreateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		BadRequest(c, "validation_error")
 		return
 	}
 
-	category, err := h.categoryService.CreateCategory(c.Request.Context(), req.Name, req.Description, req.Slug, req.ParentID)
+	// Validate that English translation is provided
+	if _, hasEnglish := req.Translations["en"]; !hasEnglish {
+		BadRequest(c, "category_name_required")
+		return
+	}
+
+	category, err := h.categoryService.CreateCategory(c.Request.Context(), req.Slug, req.ParentID, req.Translations)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		InternalServerError(c, "internal_server_error")
 		return
 	}
 
-	c.JSON(http.StatusCreated, category)
+	Created(c, "category_created", category)
 }
 
 // GetCategory godoc
@@ -88,14 +95,15 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Router /categories/{id} [get]
 func (h *CategoryHandler) GetCategory(c *gin.Context) {
 	id := c.Param("id")
+	language := utils.GetLanguageFromRequest(c)
 
-	category, err := h.categoryService.GetCategory(c.Request.Context(), id)
+	category, err := h.categoryService.GetCategory(c.Request.Context(), id, language)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		NotFound(c, "category_not_found")
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	OK(c, "category_retrieved", category)
 }
 
 // GetCategoryBySlug godoc
@@ -110,8 +118,9 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 // @Router /categories/slug/{slug} [get]
 func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 	slug := c.Param("slug")
+	language := utils.GetLanguageFromRequest(c)
 
-	category, err := h.categoryService.GetCategoryBySlug(c.Request.Context(), slug)
+	category, err := h.categoryService.GetCategoryBySlug(c.Request.Context(), slug, language)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
@@ -137,7 +146,8 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	id := c.Param("id")
 
 	// Get existing category
-	existing, err := h.categoryService.GetCategory(c.Request.Context(), id)
+	language := utils.GetLanguageFromRequest(c)
+	existing, err := h.categoryService.GetCategory(c.Request.Context(), id, language)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
@@ -201,7 +211,8 @@ func (h *CategoryHandler) ListCategories(c *gin.Context) {
 	// Create empty filter for now (can be extended later)
 	filter := map[string]any{}
 
-	categories, total, err := h.categoryService.ListCategories(c.Request.Context(), filter, page, limit)
+	language := utils.GetLanguageFromRequest(c)
+	categories, total, err := h.categoryService.ListCategories(c.Request.Context(), filter, page, limit, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -225,7 +236,8 @@ func (h *CategoryHandler) ListCategories(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /categories/root [get]
 func (h *CategoryHandler) GetRootCategories(c *gin.Context) {
-	categories, err := h.categoryService.GetRootCategories(c.Request.Context())
+	language := utils.GetLanguageFromRequest(c)
+	categories, err := h.categoryService.GetRootCategories(c.Request.Context(), language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -246,8 +258,9 @@ func (h *CategoryHandler) GetRootCategories(c *gin.Context) {
 // @Router /categories/{id}/children [get]
 func (h *CategoryHandler) GetChildCategories(c *gin.Context) {
 	parentID := c.Param("id")
+	language := utils.GetLanguageFromRequest(c)
 
-	categories, err := h.categoryService.GetChildCategories(c.Request.Context(), parentID)
+	categories, err := h.categoryService.GetChildCategories(c.Request.Context(), parentID, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -268,8 +281,9 @@ func (h *CategoryHandler) GetChildCategories(c *gin.Context) {
 // @Router /categories/{id}/tree [get]
 func (h *CategoryHandler) GetCategoryTree(c *gin.Context) {
 	rootID := c.Param("id")
+	language := utils.GetLanguageFromRequest(c)
 
-	category, err := h.categoryService.GetCategoryTree(c.Request.Context(), rootID)
+	category, err := h.categoryService.GetCategoryTree(c.Request.Context(), rootID, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -297,7 +311,8 @@ func (h *CategoryHandler) GetProductsByCategory(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	products, total, err := h.categoryService.GetProductsByCategory(c.Request.Context(), categoryID, includeSubcategories, page, limit)
+	language := utils.GetLanguageFromRequest(c)
+	products, total, err := h.categoryService.GetProductsByCategory(c.Request.Context(), categoryID, includeSubcategories, page, limit, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return

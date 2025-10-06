@@ -64,6 +64,7 @@ func NewUser(email, password, firstName, lastName string, role UserRole) (*User,
 
 	now := time.Now()
 	return &User{
+		ID:           primitive.NewObjectID(),
 		Email:        email,
 		PasswordHash: string(hashedPassword),
 		FirstName:    firstName,

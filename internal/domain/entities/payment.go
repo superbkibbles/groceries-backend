@@ -18,39 +18,39 @@ const (
 
 // PaymentMethod represents a payment method available in the system
 type PaymentMethod struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name        string                 `json:"name" bson:"name"`
-	Description string                 `json:"description" bson:"description"`
-	Type        PaymentMethodType      `json:"type" bson:"type"`
-	Active      bool                   `json:"active" bson:"active"`
-	Config      map[string]interface{} `json:"config,omitempty" bson:"config,omitempty"`
-	CreatedAt   time.Time              `json:"created_at" bson:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Type        PaymentMethodType      `json:"type"`
+	Active      bool                   `json:"active"`
+	Config      map[string]interface{} `json:"config,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
 // PaymentGateway represents a payment gateway configuration
 type PaymentGateway struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name      string                 `json:"name" bson:"name"`
-	Provider  string                 `json:"provider" bson:"provider"`
-	Active    bool                   `json:"active" bson:"active"`
-	Config    map[string]interface{} `json:"config,omitempty" bson:"config,omitempty"`
-	CreatedAt time.Time              `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time              `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	Name      string                 `json:"name"`
+	Provider  string                 `json:"provider"`
+	Active    bool                   `json:"active"`
+	Config    map[string]interface{} `json:"config,omitempty"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
 }
 
 // CustomerPaymentMethod represents a payment method saved by a customer
 type CustomerPaymentMethod struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	CustomerID      string    `json:"customer_id" bson:"customer_id"`
-	PaymentMethodID string    `json:"payment_method_id" bson:"payment_method_id"`
-	Token           string    `json:"token" bson:"token"`
-	Last4           string    `json:"last4,omitempty" bson:"last4,omitempty"`
-	ExpiryMonth     int       `json:"expiry_month,omitempty" bson:"expiry_month,omitempty"`
-	ExpiryYear      int       `json:"expiry_year,omitempty" bson:"expiry_year,omitempty"`
-	IsDefault       bool      `json:"is_default" bson:"is_default"`
-	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	CustomerID      string    `json:"customer_id"`
+	PaymentMethodID string    `json:"payment_method_id"`
+	Token           string    `json:"token"`
+	Last4           string    `json:"last4,omitempty"`
+	ExpiryMonth     int       `json:"expiry_month,omitempty"`
+	ExpiryYear      int       `json:"expiry_year,omitempty"`
+	IsDefault       bool      `json:"is_default"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // NewPaymentMethod creates a new payment method

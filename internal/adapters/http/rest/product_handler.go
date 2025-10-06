@@ -5,7 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"github.com/superbkibbles/ecommerce/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -34,14 +36,13 @@ func NewProductHandler(router *gin.RouterGroup, productService ports.ProductServ
 
 // CreateProductRequest represents the request body for creating a product
 type CreateProductRequest struct {
-	Name          string         `json:"name" binding:"required"`
-	Description   string         `json:"description"`
-	Categories    []string       `json:"categories"`
-	Attributes    map[string]any `json:"attributes"`
-	SKU           string         `json:"sku" binding:"required"`
-	Price         float64        `json:"price" binding:"required,gt=0"`
-	StockQuantity int            `json:"stock_quantity" binding:"required,gte=0"`
-	Images        []string       `json:"images"`
+	Categories    []string                        `json:"categories"`
+	Attributes    map[string]any                  `json:"attributes"`
+	SKU           string                          `json:"sku" binding:"required"`
+	Price         float64                         `json:"price" binding:"required,gt=0"`
+	StockQuantity int                             `json:"stock_quantity" binding:"required,gte=0"`
+	Images        []string                        `json:"images"`
+	Translations  map[string]entities.Translation `json:"translations" binding:"required"`
 }
 
 // UpdateProductRequest represents the request body for updating a product
@@ -68,34 +69,39 @@ type StockUpdateRequest struct {
 // @Accept json
 // @Produce json
 // @Param product body CreateProductRequest true "Product details"
-// @Success 201 {object} entities.Product
+// @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /products [post]
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		BadRequest(c, "validation_error")
+		return
+	}
+
+	// Validate that English translation is provided
+	if _, hasEnglish := req.Translations["en"]; !hasEnglish {
+		BadRequest(c, "product_name_required")
 		return
 	}
 
 	product, err := h.productService.CreateProduct(
 		c.Request.Context(),
-		req.Name,
-		req.Description,
 		req.Categories,
 		req.Attributes,
 		req.SKU,
 		req.Price,
 		req.StockQuantity,
 		req.Images,
+		req.Translations,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		InternalServerError(c, "internal_server_error")
 		return
 	}
 
-	c.JSON(http.StatusCreated, product)
+	Created(c, "product_created", product)
 }
 
 // GetProduct godoc
@@ -104,20 +110,21 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 // @Tags products
 // @Produce json
 // @Param id path string true "Product ID"
-// @Success 200 {object} entities.Product
+// @Success 200 {object} SuccessResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /products/{id} [get]
 func (h *ProductHandler) GetProduct(c *gin.Context) {
 	id := c.Param("id")
+	language := utils.GetLanguageFromRequest(c)
 
-	product, err := h.productService.GetProduct(c.Request.Context(), id)
+	product, err := h.productService.GetProduct(c.Request.Context(), id, language)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		NotFound(c, "product_not_found")
 		return
 	}
 
-	c.JSON(http.StatusOK, product)
+	OK(c, "product_retrieved", product)
 }
 
 // UpdateProduct godoc
@@ -136,8 +143,9 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
 
-	// Get existing product
-	product, err := h.productService.GetProduct(c.Request.Context(), id)
+	// Get existing product (need to get it first to update)
+	language := utils.GetLanguageFromRequest(c)
+	product, err := h.productService.GetProduct(c.Request.Context(), id, language)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
@@ -220,7 +228,8 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 	// For now, we're not implementing complex filtering
 	filter := map[string]interface{}{}
 
-	products, total, err := h.productService.ListProducts(c.Request.Context(), filter, page, limit)
+	language := utils.GetLanguageFromRequest(c)
+	products, total, err := h.productService.ListProducts(c.Request.Context(), filter, page, limit, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -251,7 +260,8 @@ func (h *ProductHandler) GetProductsByCategory(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	products, total, err := h.productService.GetProductsByCategory(c.Request.Context(), category, page, limit)
+	language := utils.GetLanguageFromRequest(c)
+	products, total, err := h.productService.GetProductsByCategory(c.Request.Context(), category, page, limit, language)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return

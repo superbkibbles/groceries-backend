@@ -66,6 +66,7 @@ type PaymentInfo struct {
 func NewOrder(customerID primitive.ObjectID, shippingInfo ShippingInfo) *Order {
 	now := time.Now()
 	return &Order{
+		ID:           primitive.NewObjectID(),
 		CustomerID:   customerID,
 		Items:        []*OrderItem{},
 		TotalAmount:  0,

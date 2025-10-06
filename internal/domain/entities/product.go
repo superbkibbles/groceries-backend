@@ -6,17 +6,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Translation represents localized content for products and categories
+type Translation struct {
+	Name        string `json:"name" bson:"name"`
+	Description string `json:"description" bson:"description"`
+}
+
 // Product represents a product in the e-commerce system
 type Product struct {
 	ID            primitive.ObjectID     `json:"id,omitempty" bson:"_id,omitempty"`
-	Name          string                 `json:"name" bson:"name"`
-	Description   string                 `json:"description" bson:"description"`
-	Categories    []primitive.ObjectID   `json:"categories" bson:"categories"` // Category IDs the product belongs to
+	Name          string                 `json:"name" bson:"name"`               // Legacy field for backward compatibility
+	Description   string                 `json:"description" bson:"description"` // Legacy field for backward compatibility
+	Categories    []primitive.ObjectID   `json:"categories" bson:"categories"`   // Category IDs the product belongs to
 	Attributes    map[string]interface{} `json:"attributes" bson:"attributes"`
 	SKU           string                 `json:"sku" bson:"sku"`
 	Price         float64                `json:"price" bson:"price"`
 	StockQuantity int                    `json:"stock_quantity" bson:"stock_quantity"`
 	Images        []string               `json:"images" bson:"images"`
+	Translations  map[string]Translation `json:"translations" bson:"translations"` // Embedded translations
 	CreatedAt     time.Time              `json:"created_at" bson:"created_at"`
 	UpdatedAt     time.Time              `json:"updated_at" bson:"updated_at"`
 }
@@ -25,6 +32,7 @@ type Product struct {
 func NewProduct(name, description string, categories []primitive.ObjectID, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string) *Product {
 	now := time.Now()
 	return &Product{
+		ID:            primitive.NewObjectID(),
 		Name:          name,
 		Description:   description,
 		Categories:    categories,
@@ -33,6 +41,34 @@ func NewProduct(name, description string, categories []primitive.ObjectID, attri
 		Price:         price,
 		StockQuantity: stockQuantity,
 		Images:        images,
+		Translations:  make(map[string]Translation),
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+}
+
+// NewProductWithTranslations creates a new product with translations
+func NewProductWithTranslations(categories []primitive.ObjectID, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string, translations map[string]Translation) *Product {
+	now := time.Now()
+
+	// Set legacy fields from English translation if available
+	var name, description string
+	if enTranslation, exists := translations["en"]; exists {
+		name = enTranslation.Name
+		description = enTranslation.Description
+	}
+
+	return &Product{
+		ID:            primitive.NewObjectID(),
+		Name:          name,
+		Description:   description,
+		Categories:    categories,
+		Attributes:    attributes,
+		SKU:           sku,
+		Price:         price,
+		StockQuantity: stockQuantity,
+		Images:        images,
+		Translations:  translations,
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
@@ -43,4 +79,96 @@ func (p *Product) UpdateStock(quantity int) error {
 	p.StockQuantity = quantity
 	p.UpdatedAt = time.Now()
 	return nil
+}
+
+// ApplyLocalization applies the specified language translation to the product
+func (p *Product) ApplyLocalization(language string) {
+	if p.Translations == nil {
+		p.Translations = make(map[string]Translation)
+	}
+
+	// If translation exists for the requested language, use it
+	if translation, exists := p.Translations[language]; exists {
+		p.Name = translation.Name
+		p.Description = translation.Description
+		return
+	}
+
+	// Fallback to English if available
+	if enTranslation, exists := p.Translations["en"]; exists {
+		p.Name = enTranslation.Name
+		p.Description = enTranslation.Description
+	}
+}
+
+// AddTranslation adds or updates a translation for a specific language
+func (p *Product) AddTranslation(language string, translation Translation) {
+	if p.Translations == nil {
+		p.Translations = make(map[string]Translation)
+	}
+	p.Translations[language] = translation
+
+	// Update legacy fields if this is English translation
+	if language == "en" {
+		p.Name = translation.Name
+		p.Description = translation.Description
+	}
+
+	p.UpdatedAt = time.Now()
+}
+
+// GetTranslation returns the translation for a specific language
+func (p *Product) GetTranslation(language string) (Translation, bool) {
+	if p.Translations == nil {
+		return Translation{}, false
+	}
+	translation, exists := p.Translations[language]
+	return translation, exists
+}
+
+// GetAllTranslations returns all translations for the product
+func (p *Product) GetAllTranslations() map[string]Translation {
+	if p.Translations == nil {
+		return make(map[string]Translation)
+	}
+	return p.Translations
+}
+
+// HasTranslation checks if a translation exists for a specific language
+func (p *Product) HasTranslation(language string) bool {
+	if p.Translations == nil {
+		return false
+	}
+	_, exists := p.Translations[language]
+	return exists
+}
+
+// GetLocalizedName returns the localized name for the specified language
+func (p *Product) GetLocalizedName(language string) string {
+	if translation, exists := p.GetTranslation(language); exists {
+		return translation.Name
+	}
+
+	// Fallback to English
+	if translation, exists := p.GetTranslation("en"); exists {
+		return translation.Name
+	}
+
+	// Fallback to legacy field
+	return p.Name
+}
+
+// GetLocalizedDescription returns the localized description for the specified language
+func (p *Product) GetLocalizedDescription(language string) string {
+	if translation, exists := p.GetTranslation(language); exists {
+		return translation.Description
+	}
+
+	// Fallback to English
+	if translation, exists := p.GetTranslation("en"); exists {
+		return translation.Description
+	}
+
+	// Fallback to legacy field
+	return p.Description
 }

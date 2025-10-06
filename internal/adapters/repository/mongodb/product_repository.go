@@ -100,3 +100,43 @@ func (r *ProductRepository) GetByCategory(ctx context.Context, category primitiv
 	filter := bson.M{"categories": category}
 	return r.List(ctx, filter, page, limit)
 }
+
+// AddTranslation adds a translation for a specific language
+func (r *ProductRepository) AddTranslation(ctx context.Context, productID primitive.ObjectID, language string, translation entities.Translation) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": productID},
+		bson.M{"$set": bson.M{"translations." + language: translation}},
+	)
+	return err
+}
+
+// UpdateTranslation updates a translation for a specific language
+func (r *ProductRepository) UpdateTranslation(ctx context.Context, productID primitive.ObjectID, language string, translation entities.Translation) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": productID},
+		bson.M{"$set": bson.M{"translations." + language: translation}},
+	)
+	return err
+}
+
+// DeleteTranslation deletes a translation for a specific language
+func (r *ProductRepository) DeleteTranslation(ctx context.Context, productID primitive.ObjectID, language string) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": productID},
+		bson.M{"$unset": bson.M{"translations." + language: ""}},
+	)
+	return err
+}
+
+// GetTranslations retrieves all translations for a product
+func (r *ProductRepository) GetTranslations(ctx context.Context, productID primitive.ObjectID) (map[string]entities.Translation, error) {
+	var product entities.Product
+	err := r.collection.FindOne(ctx, bson.M{"_id": productID}).Decode(&product)
+	if err != nil {
+		return nil, err
+	}
+	return product.Translations, nil
+}

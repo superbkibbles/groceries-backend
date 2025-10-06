@@ -15,6 +15,12 @@ type ProductRepository interface {
 	Delete(ctx context.Context, id primitive.ObjectID) error
 	List(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.Product, int, error)
 	GetByCategory(ctx context.Context, category primitive.ObjectID, page, limit int) ([]*entities.Product, int, error)
+
+	// Translation management methods
+	AddTranslation(ctx context.Context, productID primitive.ObjectID, language string, translation entities.Translation) error
+	UpdateTranslation(ctx context.Context, productID primitive.ObjectID, language string, translation entities.Translation) error
+	DeleteTranslation(ctx context.Context, productID primitive.ObjectID, language string) error
+	GetTranslations(ctx context.Context, productID primitive.ObjectID) (map[string]entities.Translation, error)
 }
 
 // CategoryRepository defines the interface for category data access
@@ -29,6 +35,12 @@ type CategoryRepository interface {
 	GetChildCategories(ctx context.Context, parentID primitive.ObjectID) ([]*entities.Category, error)
 	GetCategoryTree(ctx context.Context, rootID primitive.ObjectID) (*entities.Category, error)
 	GetProductsByCategory(ctx context.Context, categoryID primitive.ObjectID, includeSubcategories bool, page, limit int) ([]*entities.Product, int, error)
+
+	// Translation management methods
+	AddTranslation(ctx context.Context, categoryID primitive.ObjectID, language string, translation entities.Translation) error
+	UpdateTranslation(ctx context.Context, categoryID primitive.ObjectID, language string, translation entities.Translation) error
+	DeleteTranslation(ctx context.Context, categoryID primitive.ObjectID, language string) error
+	GetTranslations(ctx context.Context, categoryID primitive.ObjectID) (map[string]entities.Translation, error)
 }
 
 // OrderRepository defines the interface for order data access

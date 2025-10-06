@@ -42,6 +42,8 @@ help:
 	@echo "  docker-run     Run Docker container"
 	@echo "  dev            Run in development mode with live reload"
 	@echo "  setup          Setup development environment"
+	@echo "  db-reset       Reset database (clear + seed)"
+	@echo "  db-clear       Clear database collections"
 
 # Build targets
 .PHONY: build
@@ -217,8 +219,16 @@ seed: run-seed
 db-reset:
 	@echo "This will reset the database. Are you sure? [y/N]"
 	@read ans && [ $${ans:-N} = y ]
+	@echo "Clearing database collections..."
+	@mongosh --eval "db.products.deleteMany({}); db.categories.deleteMany({}); db.users.deleteMany({}); db.orders.deleteMany({}); db.reviews.deleteMany({}); db.addresses.deleteMany({}); db.settings.deleteMany({});" durra || echo "Warning: Could not clear database. Make sure MongoDB is running."
 	@echo "Resetting database and seeding..."
 	$(MAKE) run-seed
+
+.PHONY: db-clear
+db-clear:
+	@echo "Clearing all database collections..."
+	@mongosh --eval "db.products.deleteMany({}); db.categories.deleteMany({}); db.users.deleteMany({}); db.orders.deleteMany({}); db.reviews.deleteMany({}); db.addresses.deleteMany({}); db.settings.deleteMany({});" durra || echo "Warning: Could not clear database. Make sure MongoDB is running."
+	@echo "Database cleared!"
 
 # Git hooks
 .PHONY: install-hooks

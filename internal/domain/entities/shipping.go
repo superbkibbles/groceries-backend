@@ -8,33 +8,33 @@ import (
 
 // ShippingMethod represents a shipping method available in the system
 type ShippingMethod struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name                  string    `json:"name" bson:"name"`
-	Description           string    `json:"description" bson:"description"`
-	BasePrice             float64   `json:"base_price" bson:"base_price"`
-	EstimatedDeliveryDays int       `json:"estimated_delivery_days" bson:"estimated_delivery_days"`
-	Active                bool      `json:"active" bson:"active"`
-	CreatedAt             time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	Name                  string    `json:"name"`
+	Description           string    `json:"description"`
+	BasePrice             float64   `json:"base_price"`
+	EstimatedDeliveryDays int       `json:"estimated_delivery_days"`
+	Active                bool      `json:"active"`
+	CreatedAt             time.Time `json:"created_at"`
+	UpdatedAt             time.Time `json:"updated_at"`
 }
 
 // ShippingZone represents a geographical zone with specific shipping rates
 type ShippingZone struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name      string    `json:"name" bson:"name"`
-	Countries []string  `json:"countries" bson:"countries"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	Name      string    `json:"name"`
+	Countries []string  `json:"countries"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ShippingRate represents the cost of a shipping method for a specific zone
 type ShippingRate struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	ShippingZoneID   string    `json:"shipping_zone_id" bson:"shipping_zone_id"`
-	ShippingMethodID string    `json:"shipping_method_id" bson:"shipping_method_id"`
-	Price            float64   `json:"price" bson:"price"`
-	CreatedAt        time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	ShippingZoneID   string    `json:"shipping_zone_id"`
+	ShippingMethodID string    `json:"shipping_method_id"`
+	Price            float64   `json:"price"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // NewShippingMethod creates a new shipping method

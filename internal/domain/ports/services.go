@@ -9,13 +9,19 @@ import (
 
 // ProductService defines the interface for product business logic
 type ProductService interface {
-	CreateProduct(ctx context.Context, name, description string, categories []string, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string) (*entities.Product, error)
-	GetProduct(ctx context.Context, id string) (*entities.Product, error)
+	CreateProduct(ctx context.Context, categories []string, attributes map[string]interface{}, sku string, price float64, stockQuantity int, images []string, translations map[string]entities.Translation) (*entities.Product, error)
+	GetProduct(ctx context.Context, id string, language string) (*entities.Product, error)
 	UpdateProduct(ctx context.Context, product *entities.Product) error
 	DeleteProduct(ctx context.Context, id string) error
-	ListProducts(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.Product, int, error)
-	GetProductsByCategory(ctx context.Context, category string, page, limit int) ([]*entities.Product, int, error)
+	ListProducts(ctx context.Context, filter map[string]interface{}, page, limit int, language string) ([]*entities.Product, int, error)
+	GetProductsByCategory(ctx context.Context, category string, page, limit int, language string) ([]*entities.Product, int, error)
 	UpdateStock(ctx context.Context, productID string, quantity int) error
+
+	// Translation management methods
+	AddProductTranslation(ctx context.Context, productID string, language string, translation entities.Translation) error
+	UpdateProductTranslation(ctx context.Context, productID string, language string, translation entities.Translation) error
+	DeleteProductTranslation(ctx context.Context, productID string, language string) error
+	GetProductTranslations(ctx context.Context, productID string) (map[string]entities.Translation, error)
 }
 
 // OrderService defines the interface for order business logic
@@ -51,14 +57,20 @@ type UserService interface {
 
 // CategoryService defines the interface for category business logic
 type CategoryService interface {
-	CreateCategory(ctx context.Context, name, description, slug string, parentID string) (*entities.Category, error)
-	GetCategory(ctx context.Context, id string) (*entities.Category, error)
-	GetCategoryBySlug(ctx context.Context, slug string) (*entities.Category, error)
+	CreateCategory(ctx context.Context, slug string, parentID string, translations map[string]entities.Translation) (*entities.Category, error)
+	GetCategory(ctx context.Context, id string, language string) (*entities.Category, error)
+	GetCategoryBySlug(ctx context.Context, slug string, language string) (*entities.Category, error)
 	UpdateCategory(ctx context.Context, category *entities.Category) error
 	DeleteCategory(ctx context.Context, id string) error
-	ListCategories(ctx context.Context, filter map[string]interface{}, page, limit int) ([]*entities.Category, int, error)
-	GetRootCategories(ctx context.Context) ([]*entities.Category, error)
-	GetChildCategories(ctx context.Context, parentID string) ([]*entities.Category, error)
-	GetCategoryTree(ctx context.Context, rootID string) (*entities.Category, error)
-	GetProductsByCategory(ctx context.Context, categoryID string, includeSubcategories bool, page, limit int) ([]*entities.Product, int, error)
+	ListCategories(ctx context.Context, filter map[string]interface{}, page, limit int, language string) ([]*entities.Category, int, error)
+	GetRootCategories(ctx context.Context, language string) ([]*entities.Category, error)
+	GetChildCategories(ctx context.Context, parentID string, language string) ([]*entities.Category, error)
+	GetCategoryTree(ctx context.Context, rootID string, language string) (*entities.Category, error)
+	GetProductsByCategory(ctx context.Context, categoryID string, includeSubcategories bool, page, limit int, language string) ([]*entities.Product, int, error)
+
+	// Translation management methods
+	AddCategoryTranslation(ctx context.Context, categoryID string, language string, translation entities.Translation) error
+	UpdateCategoryTranslation(ctx context.Context, categoryID string, language string, translation entities.Translation) error
+	DeleteCategoryTranslation(ctx context.Context, categoryID string, language string) error
+	GetCategoryTranslations(ctx context.Context, categoryID string) (map[string]entities.Translation, error)
 }

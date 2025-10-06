@@ -79,6 +79,7 @@ func main() {
 	rest.NewOrderHandler(api, orderService)
 	rest.NewCategoryHandler(api, categoryService)
 	rest.NewUserHandler(api, userService, orderService)
+	rest.NewLanguageHandler(api)
 
 	// Setup settings handler
 	settingHandler := rest.NewSettingHandler(settingService)

@@ -9,14 +9,14 @@ import (
 
 // Review represents a product review in the e-commerce system
 type Review struct {
-	ID primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	ProductID primitive.ObjectID `json:"product_id" bson:"product_id"`
-	UserID primitive.ObjectID `json:"user_id" bson:"user_id"`
-	OrderID primitive.ObjectID `json:"order_id" bson:"order_id"` // Links review to a specific order
-	Rating    int       `json:"rating" bson:"rating"`     // Rating from 1-5
-	Comment   string    `json:"comment" bson:"comment"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	ID primitive.ObjectID `json:"id,omitempty"`
+	ProductID primitive.ObjectID `json:"product_id"`
+	UserID primitive.ObjectID `json:"user_id"`
+	OrderID primitive.ObjectID `json:"order_id"` // Links review to a specific order
+	Rating    int       `json:"rating"`     // Rating from 1-5
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // NewReview creates a new review with validation
