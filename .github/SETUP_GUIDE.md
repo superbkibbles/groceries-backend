@@ -108,27 +108,58 @@ Then go to GitHub and create a pull request. The workflow will automatically run
 2. Fix any build errors
 3. Commit and push fixes
 
-## 🎯 Next Steps: Deployment
+## 🎯 Docker Deployment to VPS
 
-Once CI is working, you can add automatic deployment to your VPS:
+The deployment workflow is now integrated! Here's how to set it up:
 
-### 1. Generate SSH Keys
+### 1. Prepare Your VPS
+
+SSH into your VPS (91.99.95.75):
+```bash
+ssh your_user@91.99.95.75
+```
+
+Create the deployment directory:
+```bash
+sudo mkdir -p /home/groceries/backend
+sudo chown -R $USER:$USER /home/groceries
+```
+
+Install Docker and Docker Compose (if not already installed):
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Add your user to docker group
+sudo usermod -aG docker $USER
+```
+
+Log out and log back in for group changes to take effect.
+
+### 2. Generate SSH Keys
 
 On your local machine:
 ```bash
 ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github-actions
 ```
 
-### 2. Add Public Key to VPS
+### 3. Add Public Key to VPS
 
 ```bash
 # Copy public key to clipboard
 cat ~/.ssh/github-actions.pub
 
 # SSH into your VPS
-ssh your_user@your_vps_ip
+ssh your_user@91.99.95.75
 
 # Add the key to authorized_keys
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
 echo "PASTE_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
 
 # Set correct permissions
@@ -136,52 +167,37 @@ chmod 600 ~/.ssh/authorized_keys
 chmod 700 ~/.ssh
 ```
 
-### 3. Add GitHub Secrets
+### 4. Add GitHub Secrets
 
 Go to: Repository → Settings → Secrets and variables → Actions
 
 Add these secrets:
 - **`SSH_PRIVATE_KEY`**: Contents of `~/.ssh/github-actions` (the PRIVATE key)
-- **`VPS_HOST`**: Your VPS IP (e.g., `192.168.1.100`)
-- **`VPS_USER`**: SSH username (e.g., `ubuntu`)
-- **`VPS_PORT`**: SSH port (default: `22`)
+- **`VPS_HOST`**: `91.99.95.75`
+- **`VPS_USER`**: SSH username (e.g., `ubuntu`, `root`)
 
-### 4. Add Deployment Job to Workflow
+### 5. Deploy!
 
-Create a new file `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to VPS
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:  # Allow manual trigger
-
-jobs:
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script: |
-            cd /path/to/your/app
-            git pull origin main
-            docker-compose down
-            docker-compose up -d --build
-            docker-compose ps
+Push to main branch:
+```bash
+git add .
+git commit -m "Deploy to production"
+git push origin main
 ```
+
+The deployment workflow will:
+1. ✅ Build and test your code
+2. ✅ Copy files to `/home/groceries/backend/` on VPS
+3. ✅ Build Docker images
+4. ✅ Start containers with Docker Compose
+5. ✅ Verify health check endpoint
+
+### 6. Access Your Application
+
+- **API**: `http://91.99.95.75/api/v1`
+- **Health Check**: `http://91.99.95.75/api/v1/health`
+- **Swagger Docs**: `http://91.99.95.75/swagger/index.html`
+- **Admin Panel**: `http://91.99.95.75/admin` (when Next.js is deployed)
 
 ## 📚 Additional Resources
 

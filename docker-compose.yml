@@ -64,22 +64,34 @@ services:
     profiles:
       - tools
 
-  # The main application (uncomment when ready to containerize)
-  # app:
-  #   build: .
-  #   container_name: groceries-app
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - MONGODB_URI=mongodb://admin:password@mongodb:27017/groceries_db?authSource=admin
-  #     - REDIS_URL=redis:6379
-  #     - GIN_MODE=release
-  #   depends_on:
-  #     - mongodb
-  #     - redis
-  #   networks:
-  #     - groceries-network
+  # The main application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: groceries-api
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - SERVER_PORT=80
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB=${MONGO_DB:-durra}
+      - ADMIN_BASE_URL=http://localhost:3000
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - groceries-network
+    command: ["./main"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mongodb_data:

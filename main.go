@@ -116,6 +116,9 @@ func main() {
 	settingHandler := rest.NewSettingHandler(settingService)
 	settingHandler.RegisterRoutes(router)
 
+	// Health check endpoint
+	router.GET("/api/v1/health", rest.HealthHandler)
+
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
