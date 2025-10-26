@@ -22,16 +22,9 @@ This directory contains GitHub Actions workflows for automated building, testing
    - Runs tests (if any exist)
    - Uploads test coverage
 
-2. **admin-build**: Builds and tests the Next.js admin panel
-   - Checks out the admin panel repository
-   - Sets up Node.js 20
-   - Installs dependencies
-   - Runs linting
-   - Builds the Next.js application
-   - Runs tests (if any exist)
-   - Uploads build artifacts
+2. **build-summary**: Provides a summary of build results
 
-3. **build-summary**: Provides a summary of all build results
+**Note**: The admin panel has its own separate CI workflow in the [groceries-admin](https://github.com/superbkibbles/groceries-admin) repository.
 
 ## Setup Requirements
 
@@ -41,15 +34,9 @@ No special setup required! The workflow will automatically run when:
 - You create a pull request
 - You push to the main branch
 
-### For Admin Panel Build
+### For Admin Panel
 
-The workflow assumes the admin panel is in a separate repository named `groceries-admin` under the same GitHub organization/user. If your setup is different, update line 83 in `ci.yml`:
-
-```yaml
-repository: ${{ github.repository_owner }}/groceries-admin
-```
-
-Replace with your actual admin repository path.
+The admin panel has its own CI workflow in a separate repository. See the [groceries-admin](https://github.com/superbkibbles/groceries-admin) repository for its CI configuration.
 
 ## Future Deployment Setup
 
@@ -105,16 +92,6 @@ Replace `YOUR_USERNAME` with your GitHub username.
 
 ## Troubleshooting
 
-### Build Fails on Admin Panel Checkout
-
-**Issue**: Cannot access the admin panel repository
-
-**Solutions**:
-- Ensure the `groceries-admin` repository exists
-- Verify the repository name in line 83 of `ci.yml`
-- Check that the repository is accessible to GitHub Actions
-- For private repositories, ensure proper access tokens are configured
-
 ### Go Build Fails
 
 **Issue**: Dependencies cannot be downloaded
@@ -123,16 +100,6 @@ Replace `YOUR_USERNAME` with your GitHub username.
 - Verify `go.mod` and `go.sum` are committed
 - Check for any private module dependencies
 - Ensure Go version matches (currently set to 1.23)
-
-### Next.js Build Fails
-
-**Issue**: Build errors in Next.js application
-
-**Solutions**:
-- Verify all dependencies are in `package.json`
-- Check `package-lock.json` is committed
-- Ensure `basePath: "/admin"` doesn't break the build
-- Verify environment variables are set correctly
 
 ## Local Testing
 
@@ -150,13 +117,6 @@ act pull_request
 
 ## Customization
 
-### Change Node.js Version
-
-Edit line 90 in `ci.yml`:
-```yaml
-node-version: '20'  # Change to your preferred version
-```
-
 ### Change Go Version
 
 Edit line 23 in `ci.yml`:
@@ -164,15 +124,15 @@ Edit line 23 in `ci.yml`:
 go-version: '1.23'  # Change to your preferred version
 ```
 
-### Add Environment Variables
+### Add Environment Variables for Build
 
 Add to the build step:
 ```yaml
 - name: Build application
-  run: npm run build
+  run: go build -v -o build/groceries-api ./main.go
   env:
-    NEXT_PUBLIC_API_URL: http://localhost/api/v1
-    CUSTOM_VAR: value
+    CGO_ENABLED: "0"
+    GOOS: linux
 ```
 
 ## Best Practices
