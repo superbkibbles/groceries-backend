@@ -304,3 +304,4 @@ verify:
 	@$(MAKE) swagger
 	@echo "✓ Swagger generation successful"
 	@echo "All checks passed!"
+
