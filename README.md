@@ -1,5 +1,7 @@
 # Groceries Backend API
 
+![CI/CD Pipeline](https://github.com/superbkibbles/groceries-backend/workflows/CI%2FCD%20Pipeline/badge.svg)
+
 A modern e-commerce backend API built with Go, following hexagonal architecture principles.
 
 ## Features
@@ -20,7 +22,7 @@ A modern e-commerce backend API built with Go, following hexagonal architecture 
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.23 or later
 - MongoDB 7.0+
 - Redis 7.2+
 - Docker & Docker Compose (optional)

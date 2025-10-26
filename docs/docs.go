@@ -294,6 +294,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/languages": {
+            "get": {
+                "description": "Get the list of supported languages and default language",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Language"
+                ],
+                "summary": "Get supported languages",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetSupportedLanguagesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/languages/switch": {
+            "post": {
+                "description": "Switch the user's language preference by setting a cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Language"
+                ],
+                "summary": "Switch language",
+                "parameters": [
+                    {
+                        "description": "Language switch request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.SwitchLanguageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/notifications": {
             "get": {
                 "description": "Get a list of notifications for the current user",
@@ -3983,7 +4046,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/entities.Product"
+                            "$ref": "#/definitions/rest.SuccessResponse"
                         }
                     },
                     "400": {
@@ -4071,7 +4134,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entities.Product"
+                            "$ref": "#/definitions/rest.SuccessResponse"
                         }
                     },
                     "404": {
@@ -5090,6 +5153,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "id": {
@@ -5099,6 +5163,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "parent_id": {
@@ -5112,6 +5177,13 @@ const docTemplate = `{
                 },
                 "slug": {
                     "type": "string"
+                },
+                "translations": {
+                    "description": "Embedded translations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -5435,6 +5507,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "id": {
@@ -5447,6 +5520,7 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "price": {
@@ -5457,6 +5531,13 @@ const docTemplate = `{
                 },
                 "stock_quantity": {
                     "type": "integer"
+                },
+                "translations": {
+                    "description": "Embedded translations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -5560,6 +5641,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Translation": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -5777,20 +5869,20 @@ const docTemplate = `{
         "rest.CreateCategoryRequest": {
             "type": "object",
             "required": [
-                "name"
+                "translations"
             ],
             "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
                 "parent_id": {
                     "type": "string"
                 },
                 "slug": {
                     "type": "string"
+                },
+                "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 }
             }
         },
@@ -5935,15 +6027,15 @@ const docTemplate = `{
         "rest.CreateProductRequest": {
             "type": "object",
             "required": [
-                "name",
                 "price",
                 "sku",
-                "stock_quantity"
+                "stock_quantity",
+                "translations"
             ],
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "categories": {
                     "type": "array",
@@ -5951,17 +6043,11 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "description": {
-                    "type": "string"
-                },
                 "images": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "name": {
-                    "type": "string"
                 },
                 "price": {
                     "type": "number"
@@ -5972,6 +6058,12 @@ const docTemplate = `{
                 "stock_quantity": {
                     "type": "integer",
                     "minimum": 0
+                },
+                "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 }
             }
         },
@@ -6041,8 +6133,28 @@ const docTemplate = `{
         "rest.ErrorResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
                 "error": {
                     "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.GetSupportedLanguagesResponse": {
+            "type": "object",
+            "properties": {
+                "default_language": {
+                    "type": "string"
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -6090,6 +6202,9 @@ const docTemplate = `{
                 "data": {},
                 "limit": {
                     "type": "integer"
+                },
+                "message": {
+                    "type": "string"
                 },
                 "page": {
                     "type": "integer"
@@ -6270,6 +6385,26 @@ const docTemplate = `{
                 }
             }
         },
+        "rest.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.SwitchLanguageRequest": {
+            "type": "object",
+            "required": [
+                "language"
+            ],
+            "properties": {
+                "language": {
+                    "type": "string"
+                }
+            }
+        },
         "rest.TrackingInfoRequest": {
             "type": "object",
             "required": [
@@ -6313,7 +6448,7 @@ const docTemplate = `{
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "categories": {
                     "type": "array",
@@ -6389,7 +6524,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},
 	Title:            "E-Commerce API",

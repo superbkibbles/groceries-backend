@@ -76,12 +76,14 @@ definitions:
       created_at:
         type: string
       description:
+        description: Legacy field for backward compatibility
         type: string
       id:
         type: string
       level:
         type: integer
       name:
+        description: Legacy field for backward compatibility
         type: string
       parent_id:
         type: string
@@ -91,6 +93,11 @@ definitions:
         type: array
       slug:
         type: string
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/entities.Translation'
+        description: Embedded translations
+        type: object
       updated_at:
         type: string
     type: object
@@ -313,6 +320,7 @@ definitions:
       created_at:
         type: string
       description:
+        description: Legacy field for backward compatibility
         type: string
       id:
         type: string
@@ -321,6 +329,7 @@ definitions:
           type: string
         type: array
       name:
+        description: Legacy field for backward compatibility
         type: string
       price:
         type: number
@@ -328,6 +337,11 @@ definitions:
         type: string
       stock_quantity:
         type: integer
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/entities.Translation'
+        description: Embedded translations
+        type: object
       updated_at:
         type: string
     type: object
@@ -395,6 +409,13 @@ definitions:
       name:
         type: string
       updated_at:
+        type: string
+    type: object
+  entities.Translation:
+    properties:
+      description:
+        type: string
+      name:
         type: string
     type: object
   entities.User:
@@ -543,16 +564,16 @@ definitions:
     type: object
   rest.CreateCategoryRequest:
     properties:
-      description:
-        type: string
-      name:
-        type: string
       parent_id:
         type: string
       slug:
         type: string
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/entities.Translation'
+        type: object
     required:
-    - name
+    - translations
     type: object
   rest.CreateCustomerPaymentMethodRequest:
     properties:
@@ -652,20 +673,16 @@ definitions:
   rest.CreateProductRequest:
     properties:
       attributes:
-        additionalProperties: true
+        additionalProperties: {}
         type: object
       categories:
         items:
           type: string
         type: array
-      description:
-        type: string
       images:
         items:
           type: string
         type: array
-      name:
-        type: string
       price:
         type: number
       sku:
@@ -673,11 +690,15 @@ definitions:
       stock_quantity:
         minimum: 0
         type: integer
+      translations:
+        additionalProperties:
+          $ref: '#/definitions/entities.Translation'
+        type: object
     required:
-    - name
     - price
     - sku
     - stock_quantity
+    - translations
     type: object
   rest.CreateShippingMethodRequest:
     properties:
@@ -725,8 +746,21 @@ definitions:
     type: object
   rest.ErrorResponse:
     properties:
+      code:
+        type: integer
       error:
         type: string
+      message:
+        type: string
+    type: object
+  rest.GetSupportedLanguagesResponse:
+    properties:
+      default_language:
+        type: string
+      languages:
+        items:
+          type: string
+        type: array
     type: object
   rest.LoginRequest:
     properties:
@@ -760,6 +794,8 @@ definitions:
       data: {}
       limit:
         type: integer
+      message:
+        type: string
       page:
         type: integer
       total:
@@ -881,6 +917,19 @@ definitions:
     required:
     - quantity
     type: object
+  rest.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  rest.SwitchLanguageRequest:
+    properties:
+      language:
+        type: string
+    required:
+    - language
+    type: object
   rest.TrackingInfoRequest:
     properties:
       carrier:
@@ -905,7 +954,7 @@ definitions:
   rest.UpdateProductRequest:
     properties:
       attributes:
-        additionalProperties: true
+        additionalProperties: {}
         type: object
       categories:
         items:
@@ -957,7 +1006,7 @@ definitions:
     - first_name
     - last_name
     type: object
-host: localhost:8080
+host: localhost
 info:
   contact:
     email: support@example.com
@@ -1149,6 +1198,47 @@ paths:
       summary: Update item quantity
       tags:
       - cart
+  /api/v1/languages:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of supported languages and default language
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.GetSupportedLanguagesResponse'
+      summary: Get supported languages
+      tags:
+      - Language
+  /api/v1/languages/switch:
+    post:
+      consumes:
+      - application/json
+      description: Switch the user's language preference by setting a cookie
+      parameters:
+      - description: Language switch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rest.SwitchLanguageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.ErrorResponse'
+      summary: Switch language
+      tags:
+      - Language
   /api/v1/notifications:
     get:
       consumes:
@@ -3583,7 +3673,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/entities.Product'
+            $ref: '#/definitions/rest.SuccessResponse'
         "400":
           description: Bad Request
           schema:
@@ -3634,7 +3724,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entities.Product'
+            $ref: '#/definitions/rest.SuccessResponse'
         "404":
           description: Not Found
           schema:

@@ -15,7 +15,8 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration
 type ServerConfig struct {
-	Port string
+	Port         string
+	AdminBaseURL string
 }
 
 // MongoDBConfig holds MongoDB connection configuration
@@ -26,7 +27,8 @@ type MongoDBConfig struct {
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
-	port := getEnv("SERVER_PORT", "8080")
+	port := getEnv("SERVER_PORT", "80")
+	adminBaseURL := getEnv("ADMIN_BASE_URL", "http://localhost:3000")
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	mongoDB := getEnv("MONGO_DB", "durra")
 	defaultLang := getEnv("DEFAULT_LANGUAGE", "en")
@@ -35,7 +37,8 @@ func LoadConfig() (*Config, error) {
 
 	return &Config{
 		Server: ServerConfig{
-			Port: port,
+			Port:         port,
+			AdminBaseURL: adminBaseURL,
 		},
 		MongoDB: MongoDBConfig{
 			URI:      mongoURI,

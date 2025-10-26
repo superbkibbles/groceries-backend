@@ -4,8 +4,11 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,7 +35,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8080
+// @host localhost
 // @BasePath /api/v1
 // @schemes http
 func main() {
@@ -72,6 +75,34 @@ func main() {
 
 	// Setup middleware including CORS
 	rest.SetupMiddleware(router)
+
+	// Setup reverse proxy for admin panel
+	adminURL, err := url.Parse(cfg.Server.AdminBaseURL)
+	if err != nil {
+		log.Fatalf("Failed to parse admin base URL: %v", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(adminURL)
+
+	// Custom director to handle path rewriting
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = adminURL.Host
+		// Remove /admin prefix as Next.js already has basePath configured
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/admin")
+		if req.URL.Path == "" {
+			req.URL.Path = "/"
+		}
+	}
+
+	// Admin panel routes - must be registered before API routes
+	router.Any("/admin", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/admin/")
+	})
+	router.Any("/admin/*proxyPath", func(c *gin.Context) {
+		proxy.ServeHTTP(c.Writer, c.Request)
+	})
 
 	// Setup API routes
 	api := router.Group("/api/v1")

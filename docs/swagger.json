@@ -18,7 +18,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost",
     "basePath": "/api/v1",
     "paths": {
         "/api/v1/cart": {
@@ -284,6 +284,69 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/languages": {
+            "get": {
+                "description": "Get the list of supported languages and default language",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Language"
+                ],
+                "summary": "Get supported languages",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.GetSupportedLanguagesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/languages/switch": {
+            "post": {
+                "description": "Switch the user's language preference by setting a cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Language"
+                ],
+                "summary": "Switch language",
+                "parameters": [
+                    {
+                        "description": "Language switch request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.SwitchLanguageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/rest.ErrorResponse"
                         }
@@ -3980,7 +4043,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/entities.Product"
+                            "$ref": "#/definitions/rest.SuccessResponse"
                         }
                     },
                     "400": {
@@ -4068,7 +4131,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entities.Product"
+                            "$ref": "#/definitions/rest.SuccessResponse"
                         }
                     },
                     "404": {
@@ -5087,6 +5150,7 @@
                     "type": "string"
                 },
                 "description": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "id": {
@@ -5096,6 +5160,7 @@
                     "type": "integer"
                 },
                 "name": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "parent_id": {
@@ -5109,6 +5174,13 @@
                 },
                 "slug": {
                     "type": "string"
+                },
+                "translations": {
+                    "description": "Embedded translations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -5432,6 +5504,7 @@
                     "type": "string"
                 },
                 "description": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "id": {
@@ -5444,6 +5517,7 @@
                     }
                 },
                 "name": {
+                    "description": "Legacy field for backward compatibility",
                     "type": "string"
                 },
                 "price": {
@@ -5454,6 +5528,13 @@
                 },
                 "stock_quantity": {
                     "type": "integer"
+                },
+                "translations": {
+                    "description": "Embedded translations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -5557,6 +5638,17 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Translation": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -5774,20 +5866,20 @@
         "rest.CreateCategoryRequest": {
             "type": "object",
             "required": [
-                "name"
+                "translations"
             ],
             "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
                 "parent_id": {
                     "type": "string"
                 },
                 "slug": {
                     "type": "string"
+                },
+                "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 }
             }
         },
@@ -5932,15 +6024,15 @@
         "rest.CreateProductRequest": {
             "type": "object",
             "required": [
-                "name",
                 "price",
                 "sku",
-                "stock_quantity"
+                "stock_quantity",
+                "translations"
             ],
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "categories": {
                     "type": "array",
@@ -5948,17 +6040,11 @@
                         "type": "string"
                     }
                 },
-                "description": {
-                    "type": "string"
-                },
                 "images": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "name": {
-                    "type": "string"
                 },
                 "price": {
                     "type": "number"
@@ -5969,6 +6055,12 @@
                 "stock_quantity": {
                     "type": "integer",
                     "minimum": 0
+                },
+                "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/entities.Translation"
+                    }
                 }
             }
         },
@@ -6038,8 +6130,28 @@
         "rest.ErrorResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
                 "error": {
                     "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.GetSupportedLanguagesResponse": {
+            "type": "object",
+            "properties": {
+                "default_language": {
+                    "type": "string"
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -6087,6 +6199,9 @@
                 "data": {},
                 "limit": {
                     "type": "integer"
+                },
+                "message": {
+                    "type": "string"
                 },
                 "page": {
                     "type": "integer"
@@ -6267,6 +6382,26 @@
                 }
             }
         },
+        "rest.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.SwitchLanguageRequest": {
+            "type": "object",
+            "required": [
+                "language"
+            ],
+            "properties": {
+                "language": {
+                    "type": "string"
+                }
+            }
+        },
         "rest.TrackingInfoRequest": {
             "type": "object",
             "required": [
@@ -6310,7 +6445,7 @@
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "categories": {
                     "type": "array",
