@@ -27,7 +27,7 @@ type MongoDBConfig struct {
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
-	port := getEnv("SERVER_PORT", "80")
+	port := getEnv("SERVER_PORT", "8080")
 	adminBaseURL := getEnv("ADMIN_BASE_URL", "http://localhost:3000")
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	mongoDB := getEnv("MONGO_DB", "durra")

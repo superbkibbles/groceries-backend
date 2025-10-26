@@ -144,7 +144,13 @@ jobs:
             print_info() { echo "[INFO] $1"; }
             deploy() {
               print_info "Starting deployment..."
+              print_info "Stopping any existing containers..."
               docker-compose down || true
+              # Kill any process using port 8080
+              sudo lsof -ti:8080 | xargs -r sudo kill -9 || true
+              docker stop groceries-api 2>/dev/null || true
+              docker rm groceries-api 2>/dev/null || true
+              sleep 2
               print_info "Building Docker images..."
               docker-compose build --no-cache
               print_info "Starting containers..."
@@ -158,7 +164,7 @@ jobs:
             status() {
               print_info "Current deployment status:"
               docker-compose ps
-              if curl -f http://localhost/api/v1/health > /dev/null 2>&1; then
+              if curl -f http://localhost:8080/api/v1/health > /dev/null 2>&1; then
                 print_info "Health check passed ✓"
               fi
               docker-compose logs --tail=20
@@ -171,6 +177,12 @@ jobs:
             DEPLOYEOF
               chmod +x deploy.sh
             fi
+
+            # Stop any process using port 8080 (backend port)
+            echo "Freeing up port 8080..."
+            sudo lsof -ti:8080 | xargs -r sudo kill -9 || true
+            sudo docker stop $(sudo docker ps -q --filter "publish=8080") 2>/dev/null || true
+            sleep 2
 
             # Run deployment
             ./deploy.sh deploy
@@ -191,5 +203,5 @@ jobs:
             sleep 30
 
             # Test if the application is responding
-            curl -f http://localhost/api/v1/health || exit 1
+            curl -f http://localhost:8080/api/v1/health || exit 1
             echo "✅ Deployment verification successful"
