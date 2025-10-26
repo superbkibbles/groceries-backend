@@ -98,8 +98,67 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # Create directory if it doesn't exist
+            mkdir -p /opt/groceries-backend
             cd /opt/groceries-backend
-            git pull origin main
+
+            # Check if it's a git repository
+            if [ ! -d .git ]; then
+              echo "Not a git repository, initializing..."
+              # Backup docker-compose if exists
+              if [ -f docker-compose.yml ]; then
+                cp docker-compose.yml docker-compose.yml.backup
+              fi
+              # Initialize git repo
+              git init
+              git remote add origin ${{ github.event.repository.clone_url }}
+              git fetch origin
+              git checkout -b main origin/main
+              # Restore docker-compose if backed up
+              if [ -f docker-compose.yml.backup ]; then
+                mv docker-compose.yml.backup docker-compose.yml
+              fi
+            else
+              git pull origin main
+            fi
+
+            # Ensure deploy.sh exists, if not create it
+            if [ ! -f deploy.sh ]; then
+              cat > deploy.sh << 'DEPLOYEOF'
+            #!/bin/bash
+            set -e
+            print_info() { echo "[INFO] $1"; }
+            deploy() {
+              print_info "Starting deployment..."
+              docker-compose down || true
+              print_info "Building Docker images..."
+              docker-compose build --no-cache
+              print_info "Starting containers..."
+              docker-compose up -d
+              print_info "Waiting for services..."
+              sleep 10
+              docker-compose ps
+              docker-compose logs --tail=50
+              print_info "Deployment completed!"
+            }
+            status() {
+              print_info "Current deployment status:"
+              docker-compose ps
+              if curl -f http://localhost/api/v1/health > /dev/null 2>&1; then
+                print_info "Health check passed ✓"
+              fi
+              docker-compose logs --tail=20
+            }
+            case "$1" in
+              deploy) deploy ;;
+              status) status ;;
+              *) echo "Usage: $0 {deploy|status}"; exit 1 ;;
+            esac
+            DEPLOYEOF
+              chmod +x deploy.sh
+            fi
+
+            # Run deployment
             ./deploy.sh deploy
 
       - name: Verify deployment
@@ -110,7 +169,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /opt/groceries-backend
-            ./deploy.sh status
+            if [ -f deploy.sh ]; then
+              ./deploy.sh status
+            fi
 
             # Wait for health check
             sleep 30

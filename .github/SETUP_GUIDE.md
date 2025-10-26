@@ -2,6 +2,16 @@
 
 This guide will help you set up GitHub Actions CI/CD for your Groceries project.
 
+## ⚠️ IMPORTANT: Initial VPS Setup Required
+
+**Before the GitHub Actions deployment can work, you MUST manually set up the VPS first:**
+
+1. The `/opt/groceries-backend` directory must exist on your VPS
+2. The repository must be cloned there
+3. The `deploy.sh` script must be created and executable
+
+Follow Step 1 below to set up your VPS initially, then the GitHub Actions workflow will automatically deploy on every push to main.
+
 ## ✅ What's Already Done
 
 The following files have been created and configured:
@@ -119,6 +129,22 @@ SSH into your VPS (91.99.95.75):
 ssh your_user@91.99.95.75
 ```
 
+Install Docker and Docker Compose (if not already installed):
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Add your user to docker group
+sudo usermod -aG docker $USER
+```
+
+Log out and log back in for group changes to take effect.
+
 Create the deployment directory:
 ```bash
 sudo mkdir -p /opt/groceries-backend
@@ -130,7 +156,44 @@ Clone the repository on your VPS:
 cd /opt
 git clone https://github.com/YOUR_USERNAME/groceries-backend.git
 cd groceries-backend
+
+# Create deploy.sh script
+cat > deploy.sh << 'DEPLOYEOF'
+#!/bin/bash
+set -e
+print_info() { echo "[INFO] $1"; }
+deploy() {
+  print_info "Starting deployment..."
+  docker-compose down || true
+  print_info "Building Docker images..."
+  docker-compose build --no-cache
+  print_info "Starting containers..."
+  docker-compose up -d
+  print_info "Waiting for services..."
+  sleep 10
+  docker-compose ps
+  docker-compose logs --tail=50
+  print_info "Deployment completed!"
+}
+status() {
+  print_info "Current deployment status:"
+  docker-compose ps
+  if curl -f http://localhost/api/v1/health > /dev/null 2>&1; then
+    print_info "Health check passed"
+  fi
+  docker-compose logs --tail=20
+}
+case "$1" in
+  deploy) deploy ;;
+  status) status ;;
+  *) echo "Usage: $0 {deploy|status}"; exit 1 ;;
+esac
+DEPLOYEOF
+
 chmod +x deploy.sh
+
+# Test the deployment script
+./deploy.sh deploy
 ```
 
 Install Docker and Docker Compose (if not already installed):
