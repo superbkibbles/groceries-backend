@@ -82,7 +82,7 @@ jobs:
           fi
 
   deploy:
-    name: Deploy to VPS with Docker
+    name: Deploy to Server
     runs-on: ubuntu-latest
     needs: [backend-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -91,50 +91,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          port: 22
-          source: "./main.go,./cmd,./internal,./Dockerfile,./docker-compose.yml,./go.mod,./go.sum"
-          target: "/home/groceries/backend"
-          strip_components: 0
-
-      - name: Deploy with Docker Compose on VPS
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: 91.99.95.75
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: 22
           script: |
-            cd /home/groceries/backend
-            echo "📦 Pulling latest code..."
-            echo "🛑 Stopping existing containers..."
-            docker-compose down || true
-            echo "🔨 Building Docker images..."
-            docker-compose build --no-cache
-            echo "🚀 Starting containers..."
-            docker-compose up -d
-            echo "⏳ Waiting for services to be healthy..."
-            sleep 10
-            echo "📊 Container status:"
-            docker-compose ps
-            echo "📋 Recent logs:"
-            docker-compose logs --tail=50
-            echo "✅ Deployment completed!"
+            cd /opt/groceries-backend
+            git pull origin main
+            ./deploy.sh deploy
 
       - name: Verify deployment
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: 91.99.95.75
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: 22
           script: |
-            echo "🔍 Verifying deployment..."
-            curl -f http://localhost/api/v1/health || echo "⚠️ Health check failed"
-            docker-compose ps
+            cd /opt/groceries-backend
+            ./deploy.sh status
+
+            # Wait for health check
+            sleep 30
+
+            # Test if the application is responding
+            curl -f http://localhost/api/v1/health || exit 1
+            echo "✅ Deployment verification successful"

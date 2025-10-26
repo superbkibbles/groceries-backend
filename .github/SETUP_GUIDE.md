@@ -121,8 +121,16 @@ ssh your_user@91.99.95.75
 
 Create the deployment directory:
 ```bash
-sudo mkdir -p /home/groceries/backend
-sudo chown -R $USER:$USER /home/groceries
+sudo mkdir -p /opt/groceries-backend
+sudo chown -R $USER:$USER /opt/groceries-backend
+```
+
+Clone the repository on your VPS:
+```bash
+cd /opt
+git clone https://github.com/YOUR_USERNAME/groceries-backend.git
+cd groceries-backend
+chmod +x deploy.sh
 ```
 
 Install Docker and Docker Compose (if not already installed):
@@ -172,9 +180,8 @@ chmod 700 ~/.ssh
 Go to: Repository → Settings → Secrets and variables → Actions
 
 Add these secrets:
-- **`SSH_PRIVATE_KEY`**: Contents of `~/.ssh/github-actions` (the PRIVATE key)
-- **`VPS_HOST`**: `91.99.95.75`
-- **`VPS_USER`**: SSH username (e.g., `ubuntu`, `root`)
+- **`SERVER_SSH_KEY`**: Contents of `~/.ssh/github-actions` (the PRIVATE key)
+- **`SERVER_USERNAME`**: SSH username (e.g., `ubuntu`, `root`)
 
 ### 5. Deploy!
 
@@ -187,10 +194,11 @@ git push origin main
 
 The deployment workflow will:
 1. ✅ Build and test your code
-2. ✅ Copy files to `/home/groceries/backend/` on VPS
-3. ✅ Build Docker images
-4. ✅ Start containers with Docker Compose
-5. ✅ Verify health check endpoint
+2. ✅ Pull latest code on VPS (git pull)
+3. ✅ Run deployment script (./deploy.sh deploy)
+4. ✅ Build Docker images
+5. ✅ Start containers with Docker Compose
+6. ✅ Verify health check endpoint
 
 ### 6. Access Your Application
 
