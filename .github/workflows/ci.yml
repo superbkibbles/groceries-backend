@@ -92,29 +92,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Copy files to VPS
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 22
-          source: "."
+          source: "./main.go,./cmd,./internal,./Dockerfile,./docker-compose.yml,./go.mod,./go.sum"
           target: "/home/groceries/backend"
           strip_components: 0
-          exclude: |
-            .git
-            .github
-            build
-            tmp
-            *.md
-            coverage.out
 
       - name: Deploy with Docker Compose on VPS
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: 91.99.95.75
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
             cd /home/groceries/backend
@@ -134,11 +128,11 @@ jobs:
             echo "✅ Deployment completed!"
 
       - name: Verify deployment
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: 91.99.95.75
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
             echo "🔍 Verifying deployment..."
