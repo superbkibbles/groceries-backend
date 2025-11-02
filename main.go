@@ -51,7 +51,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	redisClient, err := redisdb.NewRedisConnection("localhost:6379")
+	redisClient, err := redisdb.NewRedisConnection(cfg.Redis.URI)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

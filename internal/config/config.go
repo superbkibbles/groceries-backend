@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Server  ServerConfig
 	MongoDB MongoDBConfig
+	Redis   RedisConfig
 	I18n    I18nConfig
 }
 
@@ -25,12 +26,18 @@ type MongoDBConfig struct {
 	Database string
 }
 
+// RedisConfig holds Redis connection configuration
+type RedisConfig struct {
+	URI string
+}
+
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
 	port := getEnv("SERVER_PORT", "8080")
 	adminBaseURL := getEnv("ADMIN_BASE_URL", "http://localhost:3000")
 	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
 	mongoDB := getEnv("MONGO_DB", "durra")
+	redisURI := getEnv("REDIS_URI", "localhost:6379")
 	defaultLang := getEnv("DEFAULT_LANGUAGE", "en")
 	supportedLangs := getEnv("SUPPORTED_LANGUAGES", "en,ar")
 	bundlePath := getEnv("I18N_BUNDLE_PATH", "internal/locales")
@@ -43,6 +50,9 @@ func LoadConfig() (*Config, error) {
 		MongoDB: MongoDBConfig{
 			URI:      mongoURI,
 			Database: mongoDB,
+		},
+		Redis: RedisConfig{
+			URI: redisURI,
 		},
 		I18n: I18nConfig{
 			DefaultLanguage:    defaultLang,
