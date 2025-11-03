@@ -188,7 +188,14 @@ docker-build:
 .PHONY: docker-run
 docker-run:
 	@echo "Running Docker container..."
-	docker run -p 8080:8080 --name $(BINARY_NAME)-container $(BINARY_NAME):latest
+	@echo "Note: Ensure MongoDB and Redis are running on the host machine."
+	@echo "Using host.docker.internal to connect to host services..."
+	docker run -p 8080:8080 --name $(BINARY_NAME)-container \
+		-e MONGO_URI=mongodb://host.docker.internal:27017 \
+		-e REDIS_URI=host.docker.internal:6379 \
+		-e MONGO_DB=durra \
+		-e SERVER_PORT=8080 \
+		$(BINARY_NAME):latest
 
 .PHONY: docker-stop
 docker-stop:

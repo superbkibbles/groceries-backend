@@ -19,6 +19,7 @@ import (
 	"github.com/superbkibbles/ecommerce/internal/adapters/repository/redisdb"
 	"github.com/superbkibbles/ecommerce/internal/application/services"
 	"github.com/superbkibbles/ecommerce/internal/config"
+	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -69,6 +70,40 @@ func main() {
 	categoryService := services.NewCategoryService(categoryRepo)
 	userService := services.NewUserService(userRepo)
 	settingService := services.NewSettingService(settingRepo)
+
+	// Ensure superuser admin exists if configured via environment variables
+	if cfg.Server.AdminEmail != "" && cfg.Server.AdminPassword != "" {
+		ctx := context.Background()
+		if _, err := userRepo.GetByEmail(ctx, cfg.Server.AdminEmail); err != nil {
+			adminUser, errNew := entities.NewUser(
+				cfg.Server.AdminEmail,
+				cfg.Server.AdminPassword,
+				cfg.Server.AdminFirstName,
+				cfg.Server.AdminLastName,
+				entities.UserRoleAdmin,
+			)
+			if errNew != nil {
+				log.Printf("Failed to construct admin user: %v", errNew)
+			} else {
+				if errCreate := userRepo.Create(ctx, adminUser); errCreate != nil {
+					log.Printf("Failed to create admin user: %v", errCreate)
+				} else {
+					log.Printf("Admin user ensured: %s", cfg.Server.AdminEmail)
+				}
+			}
+		} else {
+			// Admin exists; ensure it's active and has admin role
+			existing, _ := userRepo.GetByEmail(ctx, cfg.Server.AdminEmail)
+			if existing != nil {
+				existing.Active = true
+				existing.Role = entities.UserRoleAdmin
+				existing.UpdatedAt = time.Now()
+				if errUpdate := userRepo.Update(ctx, existing); errUpdate != nil {
+					log.Printf("Failed to update existing admin user: %v", errUpdate)
+				}
+			}
+		}
+	}
 
 	// Setup Gin router
 	router := gin.Default()
