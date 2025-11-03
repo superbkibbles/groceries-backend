@@ -16,12 +16,12 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration
 type ServerConfig struct {
-	Port         string
-	AdminBaseURL string
-    AdminEmail   string
-    AdminPassword string
-    AdminFirstName string
-    AdminLastName  string
+	Port           string
+	AdminBaseURL   string
+	AdminEmail     string
+	AdminPassword  string
+	AdminFirstName string
+	AdminLastName  string
 }
 
 // MongoDBConfig holds MongoDB connection configuration
@@ -45,20 +45,20 @@ func LoadConfig() (*Config, error) {
 	defaultLang := getEnv("DEFAULT_LANGUAGE", "en")
 	supportedLangs := getEnv("SUPPORTED_LANGUAGES", "en,ar")
 	bundlePath := getEnv("I18N_BUNDLE_PATH", "internal/locales")
-    // Optional admin seed credentials
-    adminEmail := getEnv("ADMIN_EMAIL", "")
-    adminPassword := getEnv("ADMIN_PASSWORD", "")
-    adminFirstName := getEnv("ADMIN_FIRST_NAME", "")
-    adminLastName := getEnv("ADMIN_LAST_NAME", "")
+	// Optional admin seed credentials
+	adminEmail := getEnv("ADMIN_EMAIL", "")
+	adminPassword := getEnv("ADMIN_PASSWORD", "")
+	adminFirstName := getEnv("ADMIN_FIRST_NAME", "")
+	adminLastName := getEnv("ADMIN_LAST_NAME", "")
 
 	return &Config{
 		Server: ServerConfig{
-			Port:         port,
-			AdminBaseURL: adminBaseURL,
-            AdminEmail:   adminEmail,
-            AdminPassword: adminPassword,
-            AdminFirstName: adminFirstName,
-            AdminLastName:  adminLastName,
+			Port:           port,
+			AdminBaseURL:   adminBaseURL,
+			AdminEmail:     adminEmail,
+			AdminPassword:  adminPassword,
+			AdminFirstName: adminFirstName,
+			AdminLastName:  adminLastName,
 		},
 		MongoDB: MongoDBConfig{
 			URI:      mongoURI,
