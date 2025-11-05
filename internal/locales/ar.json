@@ -155,4 +155,11 @@
   "error": "حدث خطأ",
   "info": "معلومات",
   "warning": "تحذير"
+  ,
+  "home_section_created": "تم إنشاء قسم الصفحة الرئيسية بنجاح",
+  "home_section_updated": "تم تحديث قسم الصفحة الرئيسية بنجاح",
+  "home_section_deleted": "تم حذف قسم الصفحة الرئيسية بنجاح",
+  "home_sections_retrieved": "تم استرجاع أقسام الصفحة الرئيسية بنجاح",
+  "home_section_not_found": "قسم الصفحة الرئيسية غير موجود",
+  "invalid_home_section_id": "معرف قسم الصفحة الرئيسية غير صالح"
 }

@@ -155,4 +155,11 @@
   "error": "An error occurred",
   "info": "Information",
   "warning": "Warning"
+  ,
+  "home_section_created": "Home section created successfully",
+  "home_section_updated": "Home section updated successfully",
+  "home_section_deleted": "Home section deleted successfully",
+  "home_sections_retrieved": "Home sections retrieved successfully",
+  "home_section_not_found": "Home section not found",
+  "invalid_home_section_id": "Invalid home section ID"
 }

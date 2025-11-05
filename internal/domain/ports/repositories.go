@@ -82,3 +82,12 @@ type ReviewRepository interface {
 	GetByOrderID(ctx context.Context, orderID primitive.ObjectID) ([]*entities.Review, error)
 	CheckUserReviewEligibility(ctx context.Context, userID primitive.ObjectID, productID primitive.ObjectID) (bool, error)
 }
+
+// HomeSectionRepository defines the interface for home section data access
+type HomeSectionRepository interface {
+    Create(ctx context.Context, section *entities.HomeSection) error
+    GetByID(ctx context.Context, id primitive.ObjectID) (*entities.HomeSection, error)
+    Update(ctx context.Context, section *entities.HomeSection) error
+    Delete(ctx context.Context, id primitive.ObjectID) error
+    List(ctx context.Context, onlyActive bool) ([]*entities.HomeSection, error)
+}

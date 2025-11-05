@@ -74,3 +74,12 @@ type CategoryService interface {
 	DeleteCategoryTranslation(ctx context.Context, categoryID string, language string) error
 	GetCategoryTranslations(ctx context.Context, categoryID string) (map[string]entities.Translation, error)
 }
+
+// HomeSectionService defines the interface for home section business logic
+type HomeSectionService interface {
+    Create(ctx context.Context, sectionType entities.HomeSectionType, title map[string]string, productIDs, categoryIDs []string, order int, active bool) (*entities.HomeSection, error)
+    Get(ctx context.Context, id string) (*entities.HomeSection, error)
+    Update(ctx context.Context, section *entities.HomeSection) error
+    Delete(ctx context.Context, id string) error
+    List(ctx context.Context, onlyActive bool) ([]*entities.HomeSection, error)
+}

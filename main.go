@@ -63,6 +63,7 @@ func main() {
 	categoryRepo := mongodb.NewCategoryRepository(db, productRepo)
 	userRepo := mongodb.NewUserRepository(db, redisClient)
 	settingRepo := mongodb.NewSettingRepository(db)
+	homeSectionRepo := mongodb.NewHomeSectionRepository(db)
 
 	// Initialize services
 	productService := services.NewProductService(productRepo)
@@ -70,6 +71,7 @@ func main() {
 	categoryService := services.NewCategoryService(categoryRepo)
 	userService := services.NewUserService(userRepo)
 	settingService := services.NewSettingService(settingRepo)
+	homeSectionService := services.NewHomeSectionService(homeSectionRepo)
 
 	// Ensure superuser admin exists if configured via environment variables
 	if cfg.Server.AdminEmail != "" && cfg.Server.AdminPassword != "" {
@@ -146,6 +148,9 @@ func main() {
 	rest.NewCategoryHandler(api, categoryService)
 	rest.NewUserHandler(api, userService, orderService)
 	rest.NewLanguageHandler(api)
+
+	// Setup home section handler (public + admin endpoints)
+	rest.NewHomeSectionHandler(router, homeSectionService)
 
 	// Setup settings handler
 	settingHandler := rest.NewSettingHandler(settingService)
