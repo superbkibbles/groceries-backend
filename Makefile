@@ -40,6 +40,9 @@ help:
 	@echo "  format         Format code"
 	@echo "  docker-build   Build Docker image"
 	@echo "  docker-run     Run Docker container"
+	@echo "  docker-up      Start full stack (API + MongoDB + Redis)"
+	@echo "  docker-down    Stop all Docker containers"
+	@echo "  docker-logs    View container logs"
 	@echo "  dev            Run in development mode with live reload"
 	@echo "  setup          Setup development environment"
 	@echo "  db-reset       Reset database (clear + seed)"
@@ -202,6 +205,21 @@ docker-stop:
 	@echo "Stopping Docker container..."
 	docker stop $(BINARY_NAME)-container || true
 	docker rm $(BINARY_NAME)-container || true
+
+# Docker Compose - full stack
+.PHONY: docker-up
+docker-up:
+	@echo "Starting full stack (API + MongoDB + Redis)..."
+	docker compose up -d --build
+
+.PHONY: docker-down
+docker-down:
+	@echo "Stopping all containers..."
+	docker compose down
+
+.PHONY: docker-logs
+docker-logs:
+	docker compose logs -f
 
 # Development setup
 .PHONY: setup
