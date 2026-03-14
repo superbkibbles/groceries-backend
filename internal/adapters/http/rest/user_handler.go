@@ -162,7 +162,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 func (h *UserHandler) Login(c *gin.Context) {
 	log.Println("Login triggered")
 	// check if user is admin login with email and password
-	userRole := c.Request.Header.Get("user_role")
+	userRole := c.Request.Header.Get("user-role")
 	log.Println("userRole", userRole)
 	if userRole != "" && userRole == string(entities.UserRoleAdmin) {
 		// Handle admin login with email and password
