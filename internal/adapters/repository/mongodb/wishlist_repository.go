@@ -30,7 +30,7 @@ func (r *WishlistRepository) Create(ctx context.Context, wishlist *entities.Wish
 }
 
 // GetByID retrieves a wishlist by its ID
-func (r *WishlistRepository) GetByID(ctx context.Context, id string) (*entities.Wishlist, error) {
+func (r *WishlistRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*entities.Wishlist, error) {
 	var wishlist entities.Wishlist
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&wishlist)
 	if err != nil {
@@ -42,19 +42,18 @@ func (r *WishlistRepository) GetByID(ctx context.Context, id string) (*entities.
 	return &wishlist, nil
 }
 
-// GetByUserID retrieves a wishlist by user ID
+// GetByUserID retrieves a wishlist by user ID, auto-creates if missing
 func (r *WishlistRepository) GetByUserID(ctx context.Context, userID primitive.ObjectID) (*entities.Wishlist, error) {
 	var wishlist entities.Wishlist
 	err := r.collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&wishlist)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			// If no wishlist exists for the user, create a new one
-			wishlist := entities.NewWishlist(userID)
-			err := r.Create(ctx, wishlist)
+			newWishlist := entities.NewWishlist(userID)
+			err := r.Create(ctx, newWishlist)
 			if err != nil {
 				return nil, err
 			}
-			return wishlist, nil
+			return newWishlist, nil
 		}
 		return nil, err
 	}
@@ -68,28 +67,31 @@ func (r *WishlistRepository) Update(ctx context.Context, wishlist *entities.Wish
 }
 
 // Delete removes a wishlist from the database
-func (r *WishlistRepository) Delete(ctx context.Context, id string) error {
+func (r *WishlistRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
 
 // AddItem adds an item to a wishlist
-func (r *WishlistRepository) AddItem(ctx context.Context, wishlistID string, item *entities.WishlistItem) error {
+func (r *WishlistRepository) AddItem(ctx context.Context, wishlistID primitive.ObjectID, item *entities.WishlistItem) error {
 	_, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{"_id": wishlistID},
-		bson.M{"$push": bson.M{"items": item}, "$set": bson.M{"updated_at": item.AddedAt}},
+		bson.M{
+			"$push": bson.M{"items": item},
+			"$set":  bson.M{"updated_at": time.Now()},
+		},
 	)
 	return err
 }
 
 // RemoveItem removes an item from a wishlist
-func (r *WishlistRepository) RemoveItem(ctx context.Context, wishlistID string, itemID string) error {
+func (r *WishlistRepository) RemoveItem(ctx context.Context, wishlistID primitive.ObjectID, itemID primitive.ObjectID) error {
 	_, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{"_id": wishlistID},
 		bson.M{
-			"$pull": bson.M{"items": bson.M{"id": itemID}},
+			"$pull": bson.M{"items": bson.M{"_id": itemID}},
 			"$set":  bson.M{"updated_at": time.Now()},
 		},
 	)
@@ -97,11 +99,11 @@ func (r *WishlistRepository) RemoveItem(ctx context.Context, wishlistID string, 
 }
 
 // ClearWishlist removes all items from a wishlist
-func (r *WishlistRepository) ClearWishlist(ctx context.Context, wishlistID string) error {
+func (r *WishlistRepository) ClearWishlist(ctx context.Context, wishlistID primitive.ObjectID) error {
 	_, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{"_id": wishlistID},
-		bson.M{"$set": bson.M{"items": []entities.WishlistItem{}, "updated_at": time.Now()}},
+		bson.M{"$set": bson.M{"items": []*entities.WishlistItem{}, "updated_at": time.Now()}},
 	)
 	return err
 }

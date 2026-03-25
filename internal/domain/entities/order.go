@@ -33,12 +33,13 @@ type Order struct {
 
 // OrderItem represents a product in an order
 type OrderItem struct {
-	ProductID primitive.ObjectID `json:"product_id" bson:"product_id"`
-	SKU       string             `json:"sku" bson:"sku"`
-	Name      string             `json:"name" bson:"name"`
-	Price     float64            `json:"price" bson:"price"`
-	Quantity  int                `json:"quantity" bson:"quantity"`
-	Subtotal  float64            `json:"subtotal" bson:"subtotal"`
+	ProductID   primitive.ObjectID `json:"product_id" bson:"product_id"`
+	VariationID primitive.ObjectID `json:"variation_id,omitempty" bson:"variation_id,omitempty"`
+	SKU         string             `json:"sku" bson:"sku"`
+	Name        string             `json:"name" bson:"name"`
+	Price       float64            `json:"price" bson:"price"`
+	Quantity    int                `json:"quantity" bson:"quantity"`
+	Subtotal    float64            `json:"subtotal" bson:"subtotal"`
 }
 
 // ShippingInfo contains shipping details for an order
@@ -78,15 +79,13 @@ func NewOrder(customerID primitive.ObjectID, shippingInfo ShippingInfo) *Order {
 }
 
 // AddItem adds a product to the order
-func (o *Order) AddItem(productID primitive.ObjectID, sku, name string, price float64, quantity int) error {
+func (o *Order) AddItem(productID, variationID primitive.ObjectID, sku, name string, price float64, quantity int) error {
 	if o.Status != OrderStatusPending {
 		return errors.New("cannot modify a non-pending order")
 	}
 
-	// Check if the item already exists in the order
 	for i, item := range o.Items {
-		if item.ProductID == productID {
-			// Update quantity instead of adding a new item
+		if item.ProductID == productID && item.VariationID == variationID {
 			o.Items[i].Quantity += quantity
 			o.Items[i].Subtotal = float64(o.Items[i].Quantity) * o.Items[i].Price
 			o.recalculateTotal()
@@ -95,14 +94,14 @@ func (o *Order) AddItem(productID primitive.ObjectID, sku, name string, price fl
 		}
 	}
 
-	// Add new item
 	item := &OrderItem{
-		ProductID: productID,
-		SKU:       sku,
-		Name:      name,
-		Price:     price,
-		Quantity:  quantity,
-		Subtotal:  price * float64(quantity),
+		ProductID:   productID,
+		VariationID: variationID,
+		SKU:         sku,
+		Name:        name,
+		Price:       price,
+		Quantity:    quantity,
+		Subtotal:    price * float64(quantity),
 	}
 
 	o.Items = append(o.Items, item)

@@ -9,15 +9,16 @@ import (
 
 // CartItem represents a product in a user's cart
 type CartItem struct {
-	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	ProductID primitive.ObjectID `json:"product_id" bson:"product_id"`
-	SKU       string             `json:"sku" bson:"sku"`
-	Name      string             `json:"name" bson:"name"`
-	Price     float64            `json:"price" bson:"price"`
-	Quantity  int                `json:"quantity" bson:"quantity"`
-	Subtotal  float64            `json:"subtotal" bson:"subtotal"`
-	AddedAt   time.Time          `json:"added_at" bson:"added_at"`
-	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+	ID          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	ProductID   primitive.ObjectID `json:"product_id" bson:"product_id"`
+	VariationID primitive.ObjectID `json:"variation_id,omitempty" bson:"variation_id,omitempty"`
+	SKU         string             `json:"sku" bson:"sku"`
+	Name        string             `json:"name" bson:"name"`
+	Price       float64            `json:"price" bson:"price"`
+	Quantity    int                `json:"quantity" bson:"quantity"`
+	Subtotal    float64            `json:"subtotal" bson:"subtotal"`
+	AddedAt     time.Time          `json:"added_at" bson:"added_at"`
+	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
 // Cart represents a user's shopping cart in the e-commerce system
@@ -43,15 +44,13 @@ func NewCart(userID primitive.ObjectID) *Cart {
 }
 
 // AddItem adds a product to the cart
-func (c *Cart) AddItem(productID primitive.ObjectID, sku, name string, price float64, quantity int) (*CartItem, error) {
+func (c *Cart) AddItem(productID, variationID primitive.ObjectID, sku, name string, price float64, quantity int) (*CartItem, error) {
 	if quantity <= 0 {
 		return nil, errors.New("quantity must be greater than zero")
 	}
 
-	// Check if the item already exists in the cart
 	for i, item := range c.Items {
-		if item.ProductID == productID {
-			// Update quantity instead of adding a new item
+		if item.ProductID == productID && item.VariationID == variationID {
 			c.Items[i].Quantity += quantity
 			c.Items[i].Subtotal = float64(c.Items[i].Quantity) * c.Items[i].Price
 			c.Items[i].UpdatedAt = time.Now()
@@ -61,17 +60,18 @@ func (c *Cart) AddItem(productID primitive.ObjectID, sku, name string, price flo
 		}
 	}
 
-	// Add new item
 	now := time.Now()
 	item := &CartItem{
-		ProductID: productID,
-		SKU:       sku,
-		Name:      name,
-		Price:     price,
-		Quantity:  quantity,
-		Subtotal:  price * float64(quantity),
-		AddedAt:   now,
-		UpdatedAt: now,
+		ID:          primitive.NewObjectID(),
+		ProductID:   productID,
+		VariationID: variationID,
+		SKU:         sku,
+		Name:        name,
+		Price:       price,
+		Quantity:    quantity,
+		Subtotal:    price * float64(quantity),
+		AddedAt:     now,
+		UpdatedAt:   now,
 	}
 
 	c.Items = append(c.Items, item)
@@ -143,10 +143,10 @@ func (c *Cart) recalculateTotal() {
 func (c *Cart) ConvertToOrder(shippingInfo ShippingInfo) *Order {
 	order := NewOrder(c.UserID, shippingInfo)
 
-	// Copy items from cart to order
 	for _, cartItem := range c.Items {
 		order.AddItem(
 			cartItem.ProductID,
+			cartItem.VariationID,
 			cartItem.SKU,
 			cartItem.Name,
 			cartItem.Price,

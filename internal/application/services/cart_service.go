@@ -72,11 +72,18 @@ func (s *CartService) GetUserCart(ctx context.Context, userID string) (*entities
 }
 
 // AddItem adds a product to a user's cart
-func (s *CartService) AddItem(ctx context.Context, userID string, productID string, quantity int) (*entities.CartItem, error) {
-	// Convert IDs to ObjectID
+func (s *CartService) AddItem(ctx context.Context, userID string, productID string, variationID string, quantity int) (*entities.CartItem, error) {
 	productObjectID, err := primitive.ObjectIDFromHex(productID)
 	if err != nil {
 		return nil, errors.New("invalid product ID")
+	}
+
+	var variationObjectID primitive.ObjectID
+	if variationID != "" {
+		variationObjectID, err = primitive.ObjectIDFromHex(variationID)
+		if err != nil {
+			return nil, errors.New("invalid variation ID")
+		}
 	}
 
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
@@ -84,30 +91,25 @@ func (s *CartService) AddItem(ctx context.Context, userID string, productID stri
 		return nil, errors.New("invalid user ID")
 	}
 
-	// Verify product exists
 	product, err := s.productRepo.GetByID(ctx, productObjectID)
 	if err != nil {
 		return nil, errors.New("product not found")
 	}
 
-	// Check if product is in stock
 	if product.StockQuantity < quantity {
 		return nil, errors.New("insufficient stock")
 	}
 
-	// Get user's cart
 	cart, err := s.cartRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add item to cart
-	item, err := cart.AddItem(productObjectID, product.SKU, product.Name, product.Price, quantity)
+	item, err := cart.AddItem(productObjectID, variationObjectID, product.SKU, product.Name, product.Price, quantity)
 	if err != nil {
 		return nil, err
 	}
 
-	// Save to repository
 	err = s.cartRepo.AddItem(ctx, cart.ID, item)
 	if err != nil {
 		return nil, err
@@ -245,10 +247,10 @@ func (s *CartService) ConvertToOrder(ctx context.Context, userID string, shippin
 	// Create order from cart
 	order := entities.NewOrder(userObjectID, shippingInfo)
 
-	// Add items from cart to order
 	for _, cartItem := range cart.Items {
 		order.AddItem(
 			cartItem.ProductID,
+			cartItem.VariationID,
 			cartItem.SKU,
 			cartItem.Name,
 			cartItem.Price,

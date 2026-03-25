@@ -25,19 +25,16 @@ func NewWishlistService(wishlistRepo ports.WishlistRepository, productRepo ports
 
 // CreateWishlist creates a new wishlist for a user
 func (s *WishlistService) CreateWishlist(ctx context.Context, userID string) (*entities.Wishlist, error) {
-	// Convert userID to ObjectID
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user ID")
 	}
 
-	// Check if user already has a wishlist
 	existingWishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err == nil {
 		return existingWishlist, nil
 	}
 
-	// Create new wishlist
 	wishlist := entities.NewWishlist(userObjectID)
 	err = s.wishlistRepo.Create(ctx, wishlist)
 	if err != nil {
@@ -66,8 +63,7 @@ func (s *WishlistService) GetUserWishlist(ctx context.Context, userID string) (*
 }
 
 // AddItem adds a product to a user's wishlist
-func (s *WishlistService) AddItem(ctx context.Context, userID string, productID string) (*entities.WishlistItem, error) {
-	// Convert IDs to ObjectID
+func (s *WishlistService) AddItem(ctx context.Context, userID string, productID string, variationID string) (*entities.WishlistItem, error) {
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user ID")
@@ -78,25 +74,29 @@ func (s *WishlistService) AddItem(ctx context.Context, userID string, productID 
 		return nil, errors.New("invalid product ID")
 	}
 
-	// Verify product exists
+	var variationObjectID primitive.ObjectID
+	if variationID != "" {
+		variationObjectID, err = primitive.ObjectIDFromHex(variationID)
+		if err != nil {
+			return nil, errors.New("invalid variation ID")
+		}
+	}
+
 	_, err = s.productRepo.GetByID(ctx, productObjectID)
 	if err != nil {
 		return nil, errors.New("product not found")
 	}
 
-	// Get user's wishlist
 	wishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add item to wishlist
-	item, err := wishlist.AddItem(productObjectID)
+	item, err := wishlist.AddItem(productObjectID, variationObjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Save to repository
 	err = s.wishlistRepo.AddItem(ctx, wishlist.ID, item)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,6 @@ func (s *WishlistService) AddItem(ctx context.Context, userID string, productID 
 
 // RemoveItem removes an item from a user's wishlist
 func (s *WishlistService) RemoveItem(ctx context.Context, userID string, itemID string) error {
-	// Convert IDs to ObjectID
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user ID")
@@ -118,25 +117,21 @@ func (s *WishlistService) RemoveItem(ctx context.Context, userID string, itemID 
 		return errors.New("invalid item ID")
 	}
 
-	// Get user's wishlist
 	wishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return err
 	}
 
-	// Remove item from wishlist
 	err = wishlist.RemoveItem(itemObjectID)
 	if err != nil {
 		return err
 	}
 
-	// Save to repository
 	return s.wishlistRepo.RemoveItem(ctx, wishlist.ID, itemObjectID)
 }
 
 // RemoveItemByProduct removes an item from a user's wishlist by product ID
-func (s *WishlistService) RemoveItemByProduct(ctx context.Context, userID string, productID string) error {
-	// Convert IDs to ObjectID
+func (s *WishlistService) RemoveItemByProduct(ctx context.Context, userID string, productID string, variationID string) error {
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user ID")
@@ -147,16 +142,22 @@ func (s *WishlistService) RemoveItemByProduct(ctx context.Context, userID string
 		return errors.New("invalid product ID")
 	}
 
-	// Get user's wishlist
+	var variationObjectID primitive.ObjectID
+	if variationID != "" {
+		variationObjectID, err = primitive.ObjectIDFromHex(variationID)
+		if err != nil {
+			return errors.New("invalid variation ID")
+		}
+	}
+
 	wishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return err
 	}
 
-	// Find the item with the given product ID
 	var itemID primitive.ObjectID
 	for _, item := range wishlist.Items {
-		if item.ProductID == productObjectID {
+		if item.ProductID == productObjectID && item.VariationID == variationObjectID {
 			itemID = item.ID
 			break
 		}
@@ -166,34 +167,28 @@ func (s *WishlistService) RemoveItemByProduct(ctx context.Context, userID string
 		return errors.New("item not found in wishlist")
 	}
 
-	// Remove the item
 	return s.RemoveItem(ctx, userID, itemID.Hex())
 }
 
 // ClearWishlist removes all items from a user's wishlist
 func (s *WishlistService) ClearWishlist(ctx context.Context, userID string) error {
-	// Convert userID to ObjectID
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user ID")
 	}
 
-	// Get user's wishlist
 	wishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return err
 	}
 
-	// Clear wishlist
 	wishlist.ClearItems()
 
-	// Save to repository
 	return s.wishlistRepo.ClearWishlist(ctx, wishlist.ID)
 }
 
 // IsProductInWishlist checks if a product is in a user's wishlist
-func (s *WishlistService) IsProductInWishlist(ctx context.Context, userID string, productID string) (bool, error) {
-	// Convert IDs to ObjectID
+func (s *WishlistService) IsProductInWishlist(ctx context.Context, userID string, productID string, variationID string) (bool, error) {
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return false, errors.New("invalid user ID")
@@ -203,12 +198,19 @@ func (s *WishlistService) IsProductInWishlist(ctx context.Context, userID string
 	if err != nil {
 		return false, errors.New("invalid product ID")
 	}
-	// Get user's wishlist
+
+	var variationObjectID primitive.ObjectID
+	if variationID != "" {
+		variationObjectID, err = primitive.ObjectIDFromHex(variationID)
+		if err != nil {
+			return false, errors.New("invalid variation ID")
+		}
+	}
+
 	wishlist, err := s.wishlistRepo.GetByUserID(ctx, userObjectID)
 	if err != nil {
 		return false, err
 	}
 
-	// Check if product is in wishlist
-	return wishlist.ContainsProduct(productObjectID), nil
+	return wishlist.ContainsProduct(productObjectID, variationObjectID), nil
 }

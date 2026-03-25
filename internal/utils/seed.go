@@ -341,13 +341,13 @@ func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[st
 
 	// Add iPhone to John's order
 	iphone := products["IP13-GRA-128"]
-	if err := johnOrder.AddItem(iphone.ID, iphone.SKU, iphone.Name, iphone.Price, 1); err != nil {
+	if err := johnOrder.AddItem(iphone.ID, primitive.NilObjectID, iphone.SKU, iphone.Name, iphone.Price, 1); err != nil {
 		return nil, err
 	}
 
 	// Add T-shirt to John's order
 	tshirt := products["TS-BL-M"]
-	if err := johnOrder.AddItem(tshirt.ID, tshirt.SKU, tshirt.Name, tshirt.Price, 2); err != nil {
+	if err := johnOrder.AddItem(tshirt.ID, primitive.NilObjectID, tshirt.SKU, tshirt.Name, tshirt.Price, 2); err != nil {
 		return nil, err
 	}
 
@@ -375,7 +375,7 @@ func seedOrders(ctx context.Context, repo *mongodb.OrderRepository, users map[st
 
 	// Add MacBook to Jane's order
 	macbook := products["MBP16-PRO-16-512"]
-	if err := janeOrder.AddItem(macbook.ID, macbook.SKU, macbook.Name, macbook.Price, 1); err != nil {
+	if err := janeOrder.AddItem(macbook.ID, primitive.NilObjectID, macbook.SKU, macbook.Name, macbook.Price, 1); err != nil {
 		return nil, err
 	}
 

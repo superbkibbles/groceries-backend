@@ -84,7 +84,7 @@ func (s *OrderService) AddItem(ctx context.Context, orderID, productID string, q
 	}
 
 	// Add item to order
-	err = order.AddItem(productObjectID, product.SKU, product.Name, product.Price, quantity)
+	err = order.AddItem(productObjectID, primitive.NilObjectID, product.SKU, product.Name, product.Price, quantity)
 	if err != nil {
 		return err
 	}

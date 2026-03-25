@@ -106,10 +106,9 @@ func (r *CartRepository) UpdateItem(ctx context.Context, cartID primitive.Object
 		return errors.New("item not found in cart")
 	}
 
-	// Update the item
 	filter := bson.M{
-		"_id":      cartID,
-		"items.id": itemID,
+		"_id":       cartID,
+		"items._id": itemID,
 	}
 	update := bson.M{
 		"$set": bson.M{
@@ -123,34 +122,37 @@ func (r *CartRepository) UpdateItem(ctx context.Context, cartID primitive.Object
 	return err
 }
 
-// RemoveItem removes an item from a cart
-func (r *CartRepository) RemoveItem(ctx context.Context, cartID primitive.ObjectID, itemID primitive.ObjectID) error {
-	// First get the cart to calculate the new total amount
-	cart, err := r.GetByID(ctx, cartID)
+// UpdateItemQuantity updates the quantity of a cart item
+func (r *CartRepository) UpdateItemQuantity(ctx context.Context, cartID primitive.ObjectID, itemID primitive.ObjectID, quantity int) error {
+	filter := bson.M{
+		"_id":       cartID,
+		"items._id": itemID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"items.$.quantity":   quantity,
+			"items.$.updated_at": time.Now(),
+			"updated_at":         time.Now(),
+		},
+	}
+	result, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
-
-	// Find the item to remove
-	var item *entities.CartItem
-	for _, i := range cart.Items {
-		if i.ID == itemID {
-			item = i
-			break
-		}
-	}
-
-	if item == nil {
+	if result.MatchedCount == 0 {
 		return errors.New("item not found in cart")
 	}
+	return nil
+}
 
-	// Remove the item
+// RemoveItem removes an item from a cart
+func (r *CartRepository) RemoveItem(ctx context.Context, cartID primitive.ObjectID, itemID primitive.ObjectID) error {
 	filter := bson.M{"_id": cartID}
 	update := bson.M{
-		"$pull": bson.M{"items": bson.M{"id": itemID}},
+		"$pull": bson.M{"items": bson.M{"_id": itemID}},
 		"$set":  bson.M{"updated_at": time.Now()},
 	}
-	_, err = r.collection.UpdateOne(ctx, filter, update)
+	_, err := r.collection.UpdateOne(ctx, filter, update)
 	return err
 }
 

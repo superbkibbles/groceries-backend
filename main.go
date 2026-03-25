@@ -64,6 +64,11 @@ func main() {
 	userRepo := mongodb.NewUserRepository(db, redisClient)
 	settingRepo := mongodb.NewSettingRepository(db)
 	homeSectionRepo := mongodb.NewHomeSectionRepository(db)
+	cartRepo := mongodb.NewCartRepository(db)
+	wishlistRepo := mongodb.NewWishlistRepository(db)
+	paymentMethodRepo := mongodb.NewPaymentMethodRepository(db)
+	paymentGatewayRepo := mongodb.NewPaymentGatewayRepository(db)
+	customerPaymentMethodRepo := mongodb.NewCustomerPaymentMethodRepository(db)
 
 	// Initialize services
 	productService := services.NewProductService(productRepo)
@@ -72,6 +77,9 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	settingService := services.NewSettingService(settingRepo)
 	homeSectionService := services.NewHomeSectionService(homeSectionRepo)
+	cartService := services.NewCartService(cartRepo, productRepo, orderRepo)
+	wishlistService := services.NewWishlistService(wishlistRepo, productRepo)
+	paymentService := services.NewPaymentService(paymentMethodRepo, paymentGatewayRepo, customerPaymentMethodRepo, orderRepo)
 
 	// Ensure superuser admin exists if configured via environment variables
 	if cfg.Server.AdminEmail != "" && cfg.Server.AdminPassword != "" {
@@ -155,6 +163,18 @@ func main() {
 	// Setup settings handler
 	settingHandler := rest.NewSettingHandler(settingService)
 	settingHandler.RegisterRoutes(router)
+
+	// Setup cart handler
+	cartHandler := rest.NewCartHandler(cartService)
+	cartHandler.RegisterRoutes(router)
+
+	// Setup wishlist handler
+	wishlistHandler := rest.NewWishlistHandler(wishlistService)
+	wishlistHandler.RegisterRoutes(router)
+
+	// Setup payment handler
+	paymentHandler := rest.NewPaymentHandler(paymentService)
+	paymentHandler.RegisterRoutes(router)
 
 	// Health check endpoint
 	router.GET("/api/v1/health", rest.HealthHandler)
