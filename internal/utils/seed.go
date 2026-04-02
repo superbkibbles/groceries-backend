@@ -18,6 +18,7 @@ func SeedData(db *mongo.Database, redisClient *redis.Client) error {
 	// Initialize repositories
 	productRepo := mongodb.NewProductRepository(db)
 	categoryRepo := mongodb.NewCategoryRepository(db, productRepo)
+	homeSectionRepo := mongodb.NewHomeSectionRepository(db)
 	userRepo := mongodb.NewUserRepository(db, redisClient)
 	orderRepo := mongodb.NewOrderRepository(db)
 	reviewRepo := mongodb.NewReviewRepository(db, orderRepo)
@@ -33,6 +34,11 @@ func SeedData(db *mongo.Database, redisClient *redis.Client) error {
 	// Seed products
 	products, err := seedProducts(ctx, productRepo, categories)
 	if err != nil {
+		return err
+	}
+
+	// Seed home page sections (featured products, grocery picks, category shortcuts)
+	if err := seedHomeSections(ctx, homeSectionRepo, categories, products); err != nil {
 		return err
 	}
 
@@ -126,11 +132,43 @@ func seedCategories(ctx context.Context, repo *mongodb.CategoryRepository) (map[
 		"ar": {Name: "الفراش", Description: "ملاءات ووسائد وإكسسوارات الفراش"},
 	})
 
+	// Groceries (parent) — fits groceries-backend use case
+	groceries := entities.NewCategoryWithTranslations("groceries", primitive.NilObjectID, map[string]entities.Translation{
+		"en": {Name: "Groceries", Description: "Fresh food, pantry, and everyday essentials"},
+		"ar": {Name: "البقالة", Description: "طعام طازج ومخزن وأساسيات يومية"},
+	})
+	if err := repo.Create(ctx, groceries); err != nil {
+		return nil, err
+	}
+	categories[groceries.Slug] = groceries
+
+	freshProduce := entities.NewCategoryWithTranslations("fresh-produce", groceries.ID, map[string]entities.Translation{
+		"en": {Name: "Fresh Produce", Description: "Fruits and vegetables"},
+		"ar": {Name: "منتجات طازجة", Description: "فواكه وخضروات"},
+	})
+	dairyEggs := entities.NewCategoryWithTranslations("dairy-eggs", groceries.ID, map[string]entities.Translation{
+		"en": {Name: "Dairy & Eggs", Description: "Milk, cheese, yogurt, and eggs"},
+		"ar": {Name: "ألبان وبيض", Description: "حليب وجبن وزبادي وبيض"},
+	})
+	bakery := entities.NewCategoryWithTranslations("bakery", groceries.ID, map[string]entities.Translation{
+		"en": {Name: "Bakery", Description: "Bread, pastries, and baked goods"},
+		"ar": {Name: "مخبز", Description: "خبز ومخبوزات"},
+	})
+	pantry := entities.NewCategoryWithTranslations("pantry", groceries.ID, map[string]entities.Translation{
+		"en": {Name: "Pantry", Description: "Rice, pasta, oils, and dry goods"},
+		"ar": {Name: "المخزن", Description: "أرز ومعكرونة وزيوت وبقالة جافة"},
+	})
+	beverages := entities.NewCategoryWithTranslations("beverages", groceries.ID, map[string]entities.Translation{
+		"en": {Name: "Beverages", Description: "Juices, soft drinks, and water"},
+		"ar": {Name: "مشروبات", Description: "عصائر ومشروبات غازية ومياه"},
+	})
+
 	// Save subcategories
 	subcategories := []*entities.Category{
 		smartphones, laptops, audio, // Electronics subcategories
 		mens, womens, kids, // Clothing subcategories
 		furniture, kitchen, bedding, // Home & Kitchen subcategories
+		freshProduce, dairyEggs, bakery, pantry, beverages, // Groceries subcategories
 	}
 
 	for _, category := range subcategories {
@@ -244,8 +282,79 @@ func seedProducts(ctx context.Context, repo *mongodb.ProductRepository, categori
 		},
 	)
 
+	// Grocery products
+	groceryAndProduce := []primitive.ObjectID{categories["groceries"].ID, categories["fresh-produce"].ID}
+	bananas := entities.NewProductWithTranslations(
+		groceryAndProduce,
+		map[string]interface{}{"organic": true, "weight_kg": 1},
+		"ORG-BAN-1KG",
+		3.49,
+		200,
+		[]string{"bananas-organic.jpg"},
+		map[string]entities.Translation{
+			"en": {Name: "Organic Bananas 1kg", Description: "Ripen at home, fair trade organic bananas"},
+			"ar": {Name: "موز عضوي 1 كغ", Description: "موز عضوي متساوي التجارة"},
+		},
+	)
+
+	dairyCats := []primitive.ObjectID{categories["groceries"].ID, categories["dairy-eggs"].ID}
+	milk := entities.NewProductWithTranslations(
+		dairyCats,
+		map[string]interface{}{"volume_l": 1, "fat": "whole"},
+		"MILK-WH-1L",
+		1.89,
+		150,
+		[]string{"milk-whole-1l.jpg"},
+		map[string]entities.Translation{
+			"en": {Name: "Whole Milk 1L", Description: "Fresh pasteurized whole milk"},
+			"ar": {Name: "حليب كامل الدسم 1 لتر", Description: "حليب طازج كامل الدسم"},
+		},
+	)
+
+	bakeryCats := []primitive.ObjectID{categories["groceries"].ID, categories["bakery"].ID}
+	sourdough := entities.NewProductWithTranslations(
+		bakeryCats,
+		map[string]interface{}{"weight_g": 500},
+		"BRD-SOUR-1",
+		4.99,
+		80,
+		[]string{"sourdough-loaf.jpg"},
+		map[string]entities.Translation{
+			"en": {Name: "Artisan Sourdough Loaf", Description: "Stone-baked sourdough bread"},
+			"ar": {Name: "خبز ساوردو حرفي", Description: "خبز ساوردو مخبوز على الحجر"},
+		},
+	)
+
+	pantryCats := []primitive.ObjectID{categories["groceries"].ID, categories["pantry"].ID}
+	rice := entities.NewProductWithTranslations(
+		pantryCats,
+		map[string]interface{}{"weight_kg": 5},
+		"RICE-BAS-5KG",
+		18.99,
+		60,
+		[]string{"basmati-rice-5kg.jpg"},
+		map[string]entities.Translation{
+			"en": {Name: "Basmati Rice 5kg", Description: "Long grain aromatic basmati rice"},
+			"ar": {Name: "أرز بسمتي 5 كغ", Description: "أرز بسمتي طويل الحبة عطري"},
+		},
+	)
+
+	bevCats := []primitive.ObjectID{categories["groceries"].ID, categories["beverages"].ID}
+	orangeJuice := entities.NewProductWithTranslations(
+		bevCats,
+		map[string]interface{}{"volume_l": 1, "fresh": true},
+		"OJ-FRESH-1L",
+		3.29,
+		90,
+		[]string{"orange-juice-1l.jpg"},
+		map[string]entities.Translation{
+			"en": {Name: "Fresh Orange Juice 1L", Description: "Not from concentrate, refrigerated"},
+			"ar": {Name: "عصير برتقال طازج 1 لتر", Description: "طازج غير مركز، يحفظ في الثلاجة"},
+		},
+	)
+
 	// Save all products
-	for _, product := range []*entities.Product{iphone, macbook, tshirt, blender} {
+	for _, product := range []*entities.Product{iphone, macbook, tshirt, blender, bananas, milk, sourdough, rice, orangeJuice} {
 		if err := repo.Create(ctx, product); err != nil {
 			return nil, err
 		}

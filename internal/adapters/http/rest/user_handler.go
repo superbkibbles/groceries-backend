@@ -273,13 +273,13 @@ func (h *UserHandler) SendOTP(c *gin.Context) {
 		return
 	}
 
-	err := h.userService.SendOTP(c.Request.Context(), req.PhoneNumber)
+	otpResponse, err := h.userService.SendOTP(c.Request.Context(), req.PhoneNumber)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully"})
+	c.JSON(http.StatusOK, otpResponse)
 }
 
 // GetUser godoc

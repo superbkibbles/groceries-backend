@@ -73,7 +73,7 @@ type GetUserNotificationsRequest struct {
 // @Router /api/v1/notifications [get]
 func (h *NotificationHandler) GetUserNotifications(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -125,7 +125,7 @@ func (h *NotificationHandler) GetUserNotifications(c *gin.Context) {
 // @Router /api/v1/notifications/count [get]
 func (h *NotificationHandler) CountUnreadNotifications(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -154,7 +154,7 @@ func (h *NotificationHandler) CountUnreadNotifications(c *gin.Context) {
 // @Router /api/v1/notifications/{id} [get]
 func (h *NotificationHandler) GetNotification(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -244,7 +244,7 @@ func (h *NotificationHandler) CreateNotification(c *gin.Context) {
 // @Router /api/v1/notifications/{id}/read [put]
 func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -293,7 +293,7 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 // @Router /api/v1/notifications/{id}/archive [put]
 func (h *NotificationHandler) MarkAsArchived(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -340,7 +340,7 @@ func (h *NotificationHandler) MarkAsArchived(c *gin.Context) {
 // @Router /api/v1/notifications/read-all [put]
 func (h *NotificationHandler) MarkAllAsRead(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -369,7 +369,7 @@ func (h *NotificationHandler) MarkAllAsRead(c *gin.Context) {
 // @Router /api/v1/notifications/{id} [delete]
 func (h *NotificationHandler) DeleteNotification(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return

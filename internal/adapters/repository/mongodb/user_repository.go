@@ -204,7 +204,8 @@ func (r *UserRepository) GetByPhoneNumber(ctx context.Context, phoneNumber strin
 	err := r.userCollection.FindOne(ctx, bson.M{"phone_number": phoneNumber}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, errors.New("user not found")
+			// return nil, errors.New("user not found")
+			return nil, nil
 		}
 		return nil, err
 	}

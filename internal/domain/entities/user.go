@@ -51,6 +51,13 @@ type Address struct {
 	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
+// OTPResponse is testing response for sending otp
+type OTPResponse struct {
+	OTP     string `json:"otp"`
+	Message string `json:"message"`
+	Status  string `json:"status"`
+}
+
 // NewUser creates a new user with a unique ID
 func NewUser(email, password, firstName, lastName string, role UserRole) (*User, error) {
 	if email == "" || password == "" {

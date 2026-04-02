@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -59,43 +58,48 @@ func (s *UserService) Register(ctx context.Context, email, password, firstName, 
 	return user, nil
 }
 
-func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) error {
+func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) (*entities.OTPResponse, error) {
+
 	// generate otp of 6 digits
 	otp, err := utils.GenerateOTP(6)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := s.userRepo.SaveOTP(ctx, phoneNumber, otp); err != nil { // save otp to redis
-		return err
+		return nil, err
 	}
 
 	// Create OTP message
-	otpMessage := fmt.Sprintf("Your National Taxi Password is: %s", otp)
+	// otpMessage := fmt.Sprintf("Your National Taxi Password is: %s", otp)
 
-	// Send the SMS with OTP
-	if err := utils.SendSMSRequest(
-		ctx,
-		s.smsConfig.APIURL,
-		s.smsConfig.Token,
-		s.smsConfig.SenderID,
-		phoneNumber,
-		otpMessage,
-		s.smsConfig.ProductType,
-	); err != nil {
-		utils.Logger.Error().
-			Err(err).
-			Str("phone", phoneNumber).
-			Msg("Failed to send OTP")
-		return fmt.Errorf("failed to send OTP: %w", err)
-	}
+	// // Send the SMS with OTP
+	// if err := utils.SendSMSRequest(
+	// 	ctx,
+	// 	s.smsConfig.APIURL,
+	// 	s.smsConfig.Token,
+	// 	s.smsConfig.SenderID,
+	// 	phoneNumber,
+	// 	otpMessage,
+	// 	s.smsConfig.ProductType,
+	// ); err != nil {
+	// 	utils.Logger.Error().
+	// 		Err(err).
+	// 		Str("phone", phoneNumber).
+	// 		Msg("Failed to send OTP")
+	// 	return fmt.Errorf("failed to send OTP: %w", err)
+	// }
 
 	utils.Logger.Info().
 		Str("phone", phoneNumber).
 		Str("link", s.smsConfig.APIURL).
 		Msg("OTP sent successfully")
 
-	return nil
+	return &entities.OTPResponse{
+		OTP:     otp,
+		Message: "OTP sent successfully",
+		Status:  "success",
+	}, nil
 }
 
 // Login authenticates a user and returns a JWT token
@@ -111,7 +115,7 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 	// Get user by phone number
 	user, err := s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
 	if err != nil {
-		return nil, "", errors.New("invalid email or password")
+		return nil, "", errors.New("phone number not found")
 	}
 
 	// check if user does not exists

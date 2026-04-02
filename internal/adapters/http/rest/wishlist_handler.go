@@ -22,6 +22,7 @@ func NewWishlistHandler(wishlistService ports.WishlistService) *WishlistHandler 
 // RegisterRoutes registers the wishlist routes
 func (h *WishlistHandler) RegisterRoutes(router *gin.Engine) {
 	wishlistGroup := router.Group("/api/v1/wishlist")
+	wishlistGroup.Use(AuthRequired())
 	{
 		wishlistGroup.GET("", h.GetWishlist)
 		wishlistGroup.POST("/items", h.AddItem)
@@ -43,7 +44,7 @@ func (h *WishlistHandler) RegisterRoutes(router *gin.Engine) {
 // @Router /api/v1/wishlist [get]
 func (h *WishlistHandler) GetWishlist(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -79,7 +80,7 @@ type WishlistAddItemRequest struct {
 // @Router /api/v1/wishlist/items [post]
 func (h *WishlistHandler) AddItem(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -115,7 +116,7 @@ func (h *WishlistHandler) AddItem(c *gin.Context) {
 // @Router /api/v1/wishlist/items/{itemId} [delete]
 func (h *WishlistHandler) RemoveItem(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -145,7 +146,7 @@ func (h *WishlistHandler) RemoveItem(c *gin.Context) {
 // @Router /api/v1/wishlist/items [delete]
 func (h *WishlistHandler) ClearWishlist(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -180,7 +181,7 @@ type CheckProductRequest struct {
 // @Router /api/v1/wishlist/check/{productId} [get]
 func (h *WishlistHandler) CheckProduct(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return

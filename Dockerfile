@@ -22,8 +22,10 @@ RUN go install github.com/swaggo/swag/cmd/swag@latest
 # Generate Swagger docs
 RUN swag init -g main.go -o ./docs
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./main.go
+# Build API, seed, and repair-categories binaries
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./main.go && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o seed ./cmd/seed/main.go && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o repair-categories ./cmd/repair-categories/main.go
 
 # Final stage
 FROM alpine:latest
@@ -37,8 +39,10 @@ RUN adduser -D -s /bin/sh appuser
 # Set working directory
 WORKDIR /home/appuser
 
-# Copy the binary from builder stage
+# Copy binaries from builder stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/seed .
+COPY --from=builder /app/repair-categories .
 
 # Copy any additional files
 COPY --from=builder /app/docs ./docs
@@ -51,8 +55,8 @@ USER appuser
 EXPOSE 80
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/api/v1/health || exit 1
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#     CMD wget --no-verbose --tries=1 --spider http://localhost:80/api/v1/health || exit 1
 
 # Run the application
 CMD ["./main"]

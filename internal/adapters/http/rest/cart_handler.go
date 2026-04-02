@@ -23,6 +23,7 @@ func NewCartHandler(cartService ports.CartService) *CartHandler {
 // RegisterRoutes registers the cart routes
 func (h *CartHandler) RegisterRoutes(router *gin.Engine) {
 	cartGroup := router.Group("/api/v1/cart")
+	cartGroup.Use(AuthRequired())
 	{
 		cartGroup.GET("", h.GetCart)
 		cartGroup.POST("/items", h.AddItem)
@@ -45,7 +46,7 @@ func (h *CartHandler) RegisterRoutes(router *gin.Engine) {
 // @Router /api/v1/cart [get]
 func (h *CartHandler) GetCart(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -64,7 +65,7 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 // AddItemRequest represents a request to add an item to the cart
 type AddItemRequest struct {
 	ProductID   string `json:"product_id" binding:"required"`
-	VariationID string `json:"variation_id" binding:"required"`
+	VariationID string `json:"variation_id,omitempty"` // optional; empty = default product (no variant)
 	Quantity    int    `json:"quantity" binding:"required,min=1"`
 }
 
@@ -82,7 +83,7 @@ type AddItemRequest struct {
 // @Router /api/v1/cart/items [post]
 func (h *CartHandler) AddItem(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -125,7 +126,7 @@ type UpdateQuantityRequest struct {
 // @Router /api/v1/cart/items/{itemId} [put]
 func (h *CartHandler) UpdateItemQuantity(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -164,7 +165,7 @@ func (h *CartHandler) UpdateItemQuantity(c *gin.Context) {
 // @Router /api/v1/cart/items/{itemId} [delete]
 func (h *CartHandler) RemoveItem(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -194,7 +195,7 @@ func (h *CartHandler) RemoveItem(c *gin.Context) {
 // @Router /api/v1/cart/items [delete]
 func (h *CartHandler) ClearCart(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -228,7 +229,7 @@ type CheckoutRequest struct {
 // @Router /api/v1/cart/checkout [post]
 func (h *CartHandler) Checkout(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("userId")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return

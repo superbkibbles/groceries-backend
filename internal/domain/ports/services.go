@@ -43,7 +43,7 @@ type UserService interface {
 	Register(ctx context.Context, email, password, firstName, lastName string) (*entities.User, error)
 	Login(ctx context.Context, phoneNumber string) (*entities.User, string, error)          // Returns user, token, error
 	LoginAdmin(ctx context.Context, email, password string) (*entities.User, string, error) // Returns user, token, error
-	SendOTP(ctx context.Context, phoneNumber string) error
+	SendOTP(ctx context.Context, phoneNumber string) (*entities.OTPResponse, error)
 	GetUser(ctx context.Context, id string) (*entities.User, error)
 	UpdateUser(ctx context.Context, user *entities.User) error
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword string) error
@@ -77,9 +77,9 @@ type CategoryService interface {
 
 // HomeSectionService defines the interface for home section business logic
 type HomeSectionService interface {
-    Create(ctx context.Context, sectionType entities.HomeSectionType, title map[string]string, productIDs, categoryIDs []string, order int, active bool) (*entities.HomeSection, error)
-    Get(ctx context.Context, id string) (*entities.HomeSection, error)
-    Update(ctx context.Context, section *entities.HomeSection) error
-    Delete(ctx context.Context, id string) error
-    List(ctx context.Context, onlyActive bool) ([]*entities.HomeSection, error)
+	Create(ctx context.Context, sectionType entities.HomeSectionType, title map[string]string, productIDs, categoryIDs []string, order int, active bool) (*entities.HomeSection, error)
+	Get(ctx context.Context, id string) (*entities.HomeSection, error)
+	Update(ctx context.Context, section *entities.HomeSection) error
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, onlyActive bool) ([]*entities.HomeSection, error)
 }

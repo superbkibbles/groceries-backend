@@ -46,8 +46,14 @@ func (r *CategoryRepository) Create(ctx context.Context, category *entities.Cate
 		category.Path = append(append([]primitive.ObjectID{}, parent.Path...), parent.ID)
 	}
 
-	_, err := r.collection.InsertOne(ctx, category)
-	return err
+	result, err := r.collection.InsertOne(ctx, category)
+	if err != nil {
+		return err
+	}
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		category.ID = oid
+	}
+	return nil
 }
 
 // GetByID retrieves a category by its ID
@@ -85,7 +91,7 @@ func (r *CategoryRepository) Update(ctx context.Context, category *entities.Cate
 // Delete removes a category from the database
 func (r *CategoryRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	// First check if this category has children
-	count, err := r.collection.CountDocuments(ctx, bson.M{"parent_id": id})
+	count, err := r.collection.CountDocuments(ctx, bson.M{"$or": []bson.M{{"parent_id": id}, {"parentid": id}}})
 	if err != nil {
 		return err
 	}
@@ -148,7 +154,15 @@ func (r *CategoryRepository) List(ctx context.Context, filter map[string]interfa
 
 // GetRootCategories retrieves all top-level categories (no parent)
 func (r *CategoryRepository) GetRootCategories(ctx context.Context) ([]*entities.Category, error) {
-	filter := bson.M{"parent_id": ""}
+	// Roots: normalized parent_id zero, legacy parentid zero, or neither field set (pre-migration).
+	filter := bson.M{"$or": []interface{}{
+		bson.M{"parent_id": primitive.NilObjectID},
+		bson.M{"parentid": primitive.NilObjectID},
+		bson.M{"$and": []bson.M{
+			{"parent_id": bson.M{"$exists": false}},
+			{"parentid": bson.M{"$exists": false}},
+		}},
+	}}
 	opts := options.Find().SetSort(bson.M{"name": 1})
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
@@ -167,7 +181,7 @@ func (r *CategoryRepository) GetRootCategories(ctx context.Context) ([]*entities
 
 // GetChildCategories retrieves all direct child categories of a parent
 func (r *CategoryRepository) GetChildCategories(ctx context.Context, parentID primitive.ObjectID) ([]*entities.Category, error) {
-	filter := bson.M{"parent_id": parentID}
+	filter := bson.M{"$or": []bson.M{{"parent_id": parentID}, {"parentid": parentID}}}
 	opts := options.Find().SetSort(bson.M{"name": 1})
 
 	cursor, err := r.collection.Find(ctx, filter, opts)

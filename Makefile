@@ -41,6 +41,9 @@ help:
 	@echo "  docker-build   Build Docker image"
 	@echo "  docker-run     Run Docker container"
 	@echo "  docker-up      Start full stack (API + MongoDB + Redis)"
+	@echo "  docker-seed    Run database seed inside Docker (needs docker-up + rebuild once)"
+	@echo "  repair-categories  Fix category BSON + refs (runs via Docker Compose; needs stack up)"
+	@echo "  repair-categories-host  Same repair using local go run + your env MONGO_URI/MONGO_DB"
 	@echo "  docker-down    Stop all Docker containers"
 	@echo "  docker-logs    View container logs"
 	@echo "  dev            Run in development mode with live reload"
@@ -211,6 +214,25 @@ docker-stop:
 docker-up:
 	@echo "Starting full stack (API + MongoDB + Redis)..."
 	docker compose up -d --build
+
+# Run seed with the same env as the API (Mongo/Redis hostnames: mongodb, redis).
+# Rebuild the image after Dockerfile changes: docker compose build backend
+.PHONY: docker-seed
+docker-seed:
+	@echo "Running seed in a one-off backend container..."
+	docker compose run --rm backend ./seed
+
+.PHONY: repair-categories
+repair-categories:
+	@echo "Running category repair in a one-off backend container (Mongo/Redis from docker-compose)..."
+	docker compose run --rm backend ./repair-categories
+
+.PHONY: repair-categories-host
+repair-categories-host:
+	$(GOCMD) run ./cmd/repair-categories/main.go
+
+.PHONY: docker-repair-categories
+docker-repair-categories: repair-categories
 
 .PHONY: docker-down
 docker-down:
