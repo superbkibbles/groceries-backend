@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -11,6 +12,7 @@ import (
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
 	"github.com/superbkibbles/ecommerce/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // JWT secret key - in production, this should be loaded from environment variables
@@ -104,6 +106,7 @@ func (s *UserService) SendOTP(ctx context.Context, phoneNumber string) (*entitie
 
 // Login authenticates a user and returns a JWT token
 func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.User, string, error) {
+	log.Println("login service triggered")
 	// validate input and check if phone number is valid
 	if phoneNumber == "" {
 		return nil, "", errors.New("phone number is required")
@@ -115,8 +118,14 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 	// Get user by phone number
 	user, err := s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
 	if err != nil {
-		return nil, "", errors.New("phone number not found")
+		if err != mongo.ErrNoDocuments {
+			log.Println("error getting user by phone number", err)
+			return nil, "", errors.New("Internal server error")
+		}
+		println("the error is mongo.ErrNoDocuments")
 	}
+
+	log.Println("passed the getbyphonenumber function")
 
 	// check if user does not exists
 	if user == nil {
@@ -128,12 +137,13 @@ func (s *UserService) Login(ctx context.Context, phoneNumber string) (*entities.
 			Active:      true,
 			CreatedAt:   time.Now(),
 		}); err != nil {
+			log.Println("error creating new user", err)
 			return nil, "", err
 		}
 	}
 
 	// Generate JWT token
-	token, err := generateJWT(user)
+	token, err := generateJWTWithPhoneNumber(user)
 	if err != nil {
 		return nil, "", err
 	}
@@ -330,6 +340,23 @@ func generateJWT(user *entities.User) (string, error) {
 		"email":   user.Email,
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func generateJWTWithPhoneNumber(user *entities.User) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id":      user.ID,
+		"phone_number": user.PhoneNumber,
+		"role":         user.Role,
+		"exp":          time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

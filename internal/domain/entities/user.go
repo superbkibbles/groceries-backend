@@ -19,7 +19,7 @@ const (
 // User represents a user in the e-commerce system
 type User struct {
 	ID           primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Email        string             `json:"email" bson:"email"`
+	Email        string             `json:"email" bson:"email,omitempty"`
 	PasswordHash string             `json:"password_hash,omitempty" bson:"password_hash"`
 	FirstName    string             `json:"first_name" bson:"first_name"`
 	LastName     string             `json:"last_name" bson:"last_name"`

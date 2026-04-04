@@ -59,11 +59,17 @@ func (r *CartRepository) GetByUserID(ctx context.Context, userID primitive.Objec
 	return &cart, nil
 }
 
-// Update updates a cart in the database
+// Update persists cart line items and total_amount (used after domain-layer mutations).
 func (r *CartRepository) Update(ctx context.Context, cart *entities.Cart) error {
 	cart.UpdatedAt = time.Now()
 	filter := bson.M{"_id": cart.ID}
-	update := bson.M{"$set": cart}
+	update := bson.M{
+		"$set": bson.M{
+			"items":        cart.Items,
+			"total_amount": cart.TotalAmount,
+			"updated_at":   cart.UpdatedAt,
+		},
+	}
 	_, err := r.collection.UpdateOne(ctx, filter, update)
 	return err
 }

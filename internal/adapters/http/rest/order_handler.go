@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/superbkibbles/ecommerce/internal/domain/entities"
 	"github.com/superbkibbles/ecommerce/internal/domain/ports"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // OrderHandler handles HTTP requests for orders
@@ -137,8 +138,25 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	// For now, we're not implementing complex filtering
 	filter := map[string]interface{}{}
+	if customerID := c.Query("customer_id"); customerID != "" {
+		oid, err := primitive.ObjectIDFromHex(customerID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid customer_id", Code: http.StatusBadRequest})
+			return
+		}
+		filter["customer_id"] = oid
+	}
+	if status := c.Query("status"); status != "" {
+		switch entities.OrderStatus(status) {
+		case entities.OrderStatusPending, entities.OrderStatusPaid, entities.OrderStatusShipped,
+			entities.OrderStatusDelivered, entities.OrderStatusCancelled:
+			filter["status"] = entities.OrderStatus(status)
+		default:
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid status", Code: http.StatusBadRequest})
+			return
+		}
+	}
 
 	orders, total, err := h.orderService.ListOrders(c.Request.Context(), filter, page, limit)
 	if err != nil {

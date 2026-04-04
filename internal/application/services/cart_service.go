@@ -110,8 +110,8 @@ func (s *CartService) AddItem(ctx context.Context, userID string, productID stri
 		return nil, err
 	}
 
-	err = s.cartRepo.AddItem(ctx, cart.ID, item)
-	if err != nil {
+	// Persist full cart so total_amount and items stay consistent in MongoDB
+	if err = s.cartRepo.Update(ctx, cart); err != nil {
 		return nil, err
 	}
 
@@ -171,8 +171,7 @@ func (s *CartService) UpdateItemQuantity(ctx context.Context, userID string, ite
 		return err
 	}
 
-	// Save to repository
-	return s.cartRepo.UpdateItemQuantity(ctx, cart.ID, itemObjectID, quantity)
+	return s.cartRepo.Update(ctx, cart)
 }
 
 // RemoveItem removes an item from a user's cart
@@ -200,8 +199,7 @@ func (s *CartService) RemoveItem(ctx context.Context, userID string, itemID stri
 		return err
 	}
 
-	// Save to repository
-	return s.cartRepo.RemoveItem(ctx, cart.ID, itemObjectID)
+	return s.cartRepo.Update(ctx, cart)
 }
 
 // ClearCart removes all items from a user's cart

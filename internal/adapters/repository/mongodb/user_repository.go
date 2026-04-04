@@ -34,15 +34,17 @@ func NewUserRepository(db *mongo.Database, redisClient *redis.Client) *UserRepos
 // Create adds a new user to the database
 func (r *UserRepository) Create(ctx context.Context, user *entities.User) error {
 	// Check if email already exists
-	count, err := r.userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return errors.New("email already exists")
+	if user.Email != "" {
+		count, err := r.userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return errors.New("email already exists")
+		}
 	}
 
-	_, err = r.userCollection.InsertOne(ctx, user)
+	_, err := r.userCollection.InsertOne(ctx, user)
 	return err
 }
 
